@@ -1,4 +1,5 @@
 from __future__ import annotations
+from src.core.vehicles import VehicleModelRepository
 
 import logging
 import os
@@ -82,16 +83,14 @@ def initialize_database() -> None:
 # ---------------------------------------------------------------------------
 
 class NeddexCore:
-    """Minimal Core bootstrap.
+    """Minimal Core bootstrap."""
 
-    This is intentionally small.
-
-    Vehicle systems will be introduced in their own phases.
-    """
+    def __init__(self) -> None:
+        self.vehicle_models = VehicleModelRepository(DATABASE_PATH)
 
     def initialize(self) -> None:
+        self.vehicle_models.initialize()
         logger.info("Neddex Core initialized.")
-
 
 # ---------------------------------------------------------------------------
 # Discord Bot
