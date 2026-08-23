@@ -190,3 +190,189 @@ def test_database_foreign_key_cascade(repository):
         ).fetchone()[0]
 
     assert remaining == 0
+def test_get_spawn_eligible_models_excludes_disabled_models(repository):
+    repository.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=False,
+        spawn_eligible=True,
+        limited=False,
+        mint_limit=None,
+        catch_names="BMW M4",
+    )
+
+    models = repository.get_spawn_eligible_models()
+
+    assert models == []
+
+
+def test_get_spawn_eligible_models_excludes_spawn_ineligible_models(repository):
+    repository.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=False,
+        limited=False,
+        mint_limit=None,
+        catch_names="BMW M4",
+    )
+
+    models = repository.get_spawn_eligible_models()
+
+    assert models == []
+
+
+def test_get_spawn_eligible_models_includes_unlimited_models(repository):
+    created = repository.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=False,
+        mint_limit=None,
+        catch_names="BMW M4",
+    )
+
+    models = repository.get_spawn_eligible_models()
+
+    assert [model.id for model in models] == [created.id]
+
+
+def test_get_spawn_eligible_models_includes_unexhausted_limited_models(
+    repository,
+):
+    created = repository.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=True,
+        mint_limit=10000,
+        catch_names="BMW M4",
+    )
+
+    models = repository.get_spawn_eligible_models()
+
+    assert [model.id for model in models] == [created.id]
+
+
+def test_get_spawn_eligible_models_excludes_exhausted_limited_models(
+    repository,
+):
+    created = repository.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=True,
+        mint_limit=10000,
+        catch_names="BMW M4",
+    )
+
+    repository.set_highest_mint(created.id, 10000)
+
+    models = repository.get_spawn_eligible_models()
+
+    assert models == []
+
+
+def test_get_spawn_eligible_models_keeps_unlimited_and_available_limited_models(
+    repository,
+):
+    unlimited = repository.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=False,
+        mint_limit=None,
+        catch_names="BMW M4",
+    )
+
+    limited = repository.create(
+        manufacturer="Porsche",
+        model_name="911",
+        year=2024,
+        rarity_weight=2.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=True,
+        mint_limit=10000,
+        catch_names="Porsche 911",
+    )
+
+    models = repository.get_spawn_eligible_models()
+
+    assert [model.id for model in models] == [
+        unlimited.id,
+        limited.id,
+    ]
+def test_set_highest_mint(repository):
+    vehicle = repository.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=True,
+        mint_limit=10000,
+        catch_names="BMW M4",
+    )
+
+    updated = repository.set_highest_mint(
+        vehicle.id,
+        700,
+    )
+
+    assert updated.highest_mint == 700
+
+
+def test_set_highest_mint_cannot_exceed_limit(repository):
+    vehicle = repository.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=True,
+        mint_limit=10000,
+        catch_names="BMW M4",
+    )
+
+    with pytest.raises(ValueError):
+        repository.set_highest_mint(
+            vehicle.id,
+            10001,
+        )

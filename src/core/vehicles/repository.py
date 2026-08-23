@@ -250,6 +250,113 @@ class VehicleModelRepository:
 
         return self.get(row["id"])
 
+    def set_highest_mint(
+        self,
+        vehicle_model_id: int,
+        highest_mint: int,
+    ) -> VehicleModel:
+        """
+        Set the highest assigned mint for a Vehicle Model.
+
+        This is intentionally validated against the model's mint limit.
+        """
+
+        if highest_mint < 0:
+            raise ValueError("Highest mint cannot be negative.")
+
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT mint_limit
+                FROM vehicle_models
+                WHERE id = ?
+                """,
+                (vehicle_model_id,),
+            ).fetchone()
+
+            if row is None:
+                raise LookupError(
+                    f"Vehicle Model {vehicle_model_id} does not exist."
+                )
+
+            mint_limit = row["mint_limit"]
+
+            if mint_limit is not None and highest_mint > mint_limit:
+                raise ValueError(
+                    "Highest mint cannot exceed the model's mint limit."
+                )
+
+            connection.execute(
+                """
+                UPDATE vehicle_models
+                SET highest_mint = ?
+                WHERE id = ?
+                """,
+                (
+                    highest_mint,
+                    vehicle_model_id,
+                ),
+            )
+
+            connection.commit()
+
+        return self.get(vehicle_model_id)
+
+    def get_spawn_eligible_models(self) -> list[VehicleModel]:
+        """
+        Return Vehicle Models that are currently allowed to participate
+        in the global spawn pool.
+
+        Disabled models, manually excluded models, and exhausted limited
+        models are excluded.
+        """
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    manufacturer,
+                    model_name,
+                    year,
+                    rarity_weight,
+                    spawn_image,
+                    card_image,
+                    enabled,
+                    spawn_eligible,
+                    limited,
+                    mint_limit,
+                    highest_mint
+                FROM vehicle_models
+                WHERE enabled = 1
+                  AND spawn_eligible = 1
+                  AND rarity_weight > 0
+                  AND (
+                        limited = 0
+                        OR highest_mint < mint_limit
+                  )
+                ORDER BY id
+                """
+            ).fetchall()
+
+        return [
+            VehicleModel(
+                id=row["id"],
+                manufacturer=row["manufacturer"],
+                model_name=row["model_name"],
+                year=row["year"],
+                rarity_weight=row["rarity_weight"],
+                spawn_image=row["spawn_image"],
+                card_image=row["card_image"],
+                enabled=bool(row["enabled"]),
+                spawn_eligible=bool(row["spawn_eligible"]),
+                limited=bool(row["limited"]),
+                mint_limit=row["mint_limit"],
+                highest_mint=row["highest_mint"],
+            )
+            for row in rows
+        ]
+
     @staticmethod
     def _parse_catch_names(catch_names: str) -> list[str]:
         """Split the admin catch-name field into individual names."""
