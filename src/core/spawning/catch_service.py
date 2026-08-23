@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from src.core.collections import VehicleInstance, VehicleInstanceRepository
 from src.core.vehicles import VehicleModelRepository
 
 from .manager import SpawnManager
@@ -15,26 +16,27 @@ class CatchResult:
     success: bool
     model_id: int | None
     spawn_id: str | None
+    vehicle_instance: VehicleInstance | None
     reason: str
 
 
 class CatchService:
     """
-    Handles vehicle catch validation.
+    Handles vehicle catch validation and successful ownership creation.
 
     Responsibilities:
     - find the submitted catch name
     - verify the server has an active spawn
     - verify the submitted vehicle matches the active spawn
-    - resolve the spawn on success
+    - create the vehicle instance
+    - consume the spawn after successful mint
 
     It does NOT:
-    - create inventory
-    - create profiles
-    - create vehicle instances
-    - assign ownership
-    - create mints
     - send Discord messages
+    - render cards
+    - manage Discord UI
+    - manage garage capacity
+    - manage trading
     """
 
     def __init__(
@@ -42,9 +44,11 @@ class CatchService:
         *,
         spawn_manager: SpawnManager,
         vehicle_repository: VehicleModelRepository,
+        instance_repository: VehicleInstanceRepository,
     ) -> None:
         self.spawn_manager = spawn_manager
         self.vehicle_repository = vehicle_repository
+        self.instance_repository = instance_repository
 
     def catch(
         self,
@@ -54,15 +58,7 @@ class CatchService:
         submitted_name: str,
         now: datetime,
     ) -> CatchResult:
-        """
-        Attempt to catch the active vehicle for one server.
-
-        The user ID is intentionally accepted by the Core boundary even
-        though ownership is not created yet. This keeps the operation
-        ready for the later ownership layer without coupling it now.
-        """
-
-        del user_id
+        """Attempt to catch the active vehicle."""
 
         active_spawn = self.spawn_manager.get_active_spawn(server_id)
 
@@ -71,7 +67,22 @@ class CatchService:
                 success=False,
                 model_id=None,
                 spawn_id=None,
+                vehicle_instance=None,
                 reason="no_active_spawn",
+            )
+
+        if now >= active_spawn.expires_at:
+            self.spawn_manager.expire_spawn(
+                server_id=server_id,
+                now=now,
+            )
+
+            return CatchResult(
+                success=False,
+                model_id=None,
+                spawn_id=active_spawn.spawn_id,
+                vehicle_instance=None,
+                reason="spawn_expired",
             )
 
         vehicle = self.vehicle_repository.find_by_catch_name(
@@ -83,6 +94,7 @@ class CatchService:
                 success=False,
                 model_id=None,
                 spawn_id=active_spawn.spawn_id,
+                vehicle_instance=None,
                 reason="unknown_vehicle",
             )
 
@@ -93,6 +105,7 @@ class CatchService:
                 success=False,
                 model_id=None,
                 spawn_id=active_spawn.spawn_id,
+                vehicle_instance=None,
                 reason="invalid_spawn_model",
             )
 
@@ -101,8 +114,15 @@ class CatchService:
                 success=False,
                 model_id=vehicle.id,
                 spawn_id=active_spawn.spawn_id,
+                vehicle_instance=None,
                 reason="wrong_vehicle",
             )
+
+        instance = self.instance_repository.create(
+            vehicle_model_id=vehicle.id,
+            owner_user_id=user_id,
+            acquired_at=now,
+        )
 
         resolved = self.spawn_manager.resolve_catch(
             server_id=server_id,
@@ -111,16 +131,14 @@ class CatchService:
         )
 
         if not resolved:
-            return CatchResult(
-                success=False,
-                model_id=vehicle.id,
-                spawn_id=active_spawn.spawn_id,
-                reason="spawn_expired",
+            raise RuntimeError(
+                "Spawn was lost after successful mint."
             )
 
         return CatchResult(
             success=True,
             model_id=vehicle.id,
             spawn_id=active_spawn.spawn_id,
+            vehicle_instance=instance,
             reason="caught",
         )
