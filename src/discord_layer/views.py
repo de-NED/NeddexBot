@@ -2,7 +2,7 @@ from __future__ import annotations
 from .modals import CatchModal
 
 import discord
-
+import discord.ui
 
 class SpawnCatchView(discord.ui.View):
     """
