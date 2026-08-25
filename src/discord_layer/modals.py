@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import discord
 
@@ -38,7 +38,7 @@ class CatchModal(discord.ui.Modal):
             server_id=interaction.guild.id,
             user_id=interaction.user.id,
             submitted_name=self.vehicle_name.value,
-            now=datetime.utcnow(),
+            now=datetime.now(timezone.utc),
         )
 
         await interaction.response.send_message(

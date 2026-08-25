@@ -13,12 +13,7 @@ async def send_spawn_message(
     image_path: str,
     catch_service,
 ) -> discord.Message:
-    """
-    Sends the raw spawn image with the catch button.
-
-    Discord layer only.
-    Core already decided what spawned.
-    """
+    """Send the raw spawn image with the Catch button."""
 
     view = SpawnCatchView(
         catch_service=catch_service,
@@ -36,17 +31,7 @@ async def send_spawn_message(
         filename=image_file.name,
     )
 
-    embed = discord.Embed(
-        title="A vehicle has appeared!",
-        description="Press Catch to attempt ownership.",
-    )
-
-    embed.set_image(
-        url=f"attachment://{image_file.name}"
-    )
-
     return await channel.send(
-        embed=embed,
         file=file,
         view=view,
     )

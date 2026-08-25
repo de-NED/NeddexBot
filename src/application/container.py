@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from datetime import timedelta
-import random
 
 from src.core.collections import VehicleInstanceRepository
 from src.core.servers import ServerEligibility
@@ -15,12 +13,7 @@ from src.core.vehicles import VehicleModelRepository
 
 
 class NeddexApplication:
-    """
-    Connects infrastructure and Core services.
-
-    Discord does not own game logic.
-    It only calls this container.
-    """
+    """Application dependency container."""
 
     def __init__(self, database_path: Path) -> None:
         self.database_path = database_path
@@ -40,18 +33,15 @@ class NeddexApplication:
         self.vehicle_models.initialize()
         self.vehicle_instances.initialize()
 
+        eligibility = ServerEligibility()
+
         model_source = VehicleModelSpawnSource(
             self.vehicle_models
         )
 
-        eligibility = ServerEligibility()
-
         self.spawn_manager = SpawnManager(
             eligibility=eligibility,
             model_source=model_source,
-            spawn_cooldown=timedelta(minutes=30),
-            catch_window=timedelta(minutes=2),
-            rng=random.Random(),
         )
 
         self.catch_service = CatchService(
