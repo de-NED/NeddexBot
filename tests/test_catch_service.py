@@ -327,3 +327,39 @@ def test_expired_catch_never_mints(tmp_path):
     assert result.reason == "spawn_expired"
     assert result.vehicle_instance is None
     assert instances.list_for_owner(123) == []
+
+def test_successful_mint_but_failed_spawn_resolution_does_not_silently_succeed(
+    tmp_path,
+):
+    _, instances, manager, service, _ = make_system(tmp_path)
+
+    create_spawn(manager)
+
+    original_resolve = manager.resolve_catch
+
+    def failed_resolve(*, server_id, model_id, now):
+        return False
+
+    manager.resolve_catch = failed_resolve
+
+    try:
+        service.catch(
+            server_id=100,
+            user_id=123,
+            submitted_name="M4",
+            now=BASE_TIME,
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "Spawn was lost after successful mint."
+    else:
+        raise AssertionError(
+            "CatchService should raise if spawn resolution fails "
+            "after the vehicle is minted."
+        )
+
+    owned = instances.list_for_owner(123)
+
+    assert len(owned) == 1
+    assert manager.get_active_spawn(100) is not None
+
+    manager.resolve_catch = original_resolve

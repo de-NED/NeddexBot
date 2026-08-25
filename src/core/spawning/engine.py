@@ -41,7 +41,8 @@ class SpawnEngine:
     - select an eligible vehicle model
     - create an active spawn
     - determine whether a spawn has expired
-    - resolve a successful catch
+    - resolve successful catches
+    - claim and restore catches safely
 
     It does NOT:
     - inspect Discord messages
@@ -156,20 +157,62 @@ class SpawnEngine:
 
         Returns True only when the supplied model matches the active spawn
         and the catch occurs before expiration.
+
+        Deprecated in favor of claim_catch() for catch flows that need
+        recovery if vehicle minting fails.
+        """
+
+        claimed = self.claim_catch(
+            model_id=model_id,
+            now=now,
+        )
+
+        return claimed is not None
+
+    def claim_catch(
+        self,
+        *,
+        model_id: str,
+        now: datetime,
+    ) -> ActiveSpawn | None:
+        """
+        Claim and remove a valid active spawn.
+
+        Returns the claimed spawn when successful.
+        Returns None when no valid matching spawn exists.
         """
 
         if self.active_spawn is None:
-            return False
+            return None
 
         if now >= self.active_spawn.expires_at:
             self.active_spawn = None
-            return False
+            return None
 
         if model_id != self.active_spawn.model_id:
-            return False
+            return None
 
+        claimed = self.active_spawn
         self.active_spawn = None
-        return True
+
+        return claimed
+
+    def restore_spawn(
+        self,
+        spawn: ActiveSpawn,
+    ) -> None:
+        """
+        Restore a previously claimed spawn.
+
+        A restore is only valid when there is currently no active spawn.
+        """
+
+        if self.active_spawn is not None:
+            raise RuntimeError(
+                "Cannot restore spawn while another spawn is active."
+            )
+
+        self.active_spawn = spawn
 
     def _weighted_choice(
         self,

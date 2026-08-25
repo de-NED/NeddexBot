@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from src.core.collections import VehicleInstance, VehicleInstanceRepository
+from src.core.collections import (
+    VehicleInstance,
+    VehicleInstanceRepository,
+)
 from src.core.vehicles import VehicleModelRepository
 
 from .manager import SpawnManager
@@ -29,7 +32,7 @@ class CatchService:
     - verify the server has an active spawn
     - verify the submitted vehicle matches the active spawn
     - create the vehicle instance
-    - consume the spawn after successful mint
+    - resolve the spawn after a successful mint
 
     It does NOT:
     - send Discord messages
@@ -100,7 +103,7 @@ class CatchService:
 
         try:
             spawned_model_id = int(active_spawn.model_id)
-        except ValueError:
+        except (TypeError, ValueError):
             return CatchResult(
                 success=False,
                 model_id=None,
@@ -118,12 +121,19 @@ class CatchService:
                 reason="wrong_vehicle",
             )
 
+        # Create the vehicle instance first.
+        #
+        # This is intentional:
+        # - if minting fails, the active spawn must remain available
+        # - only after a successful mint do we consume the spawn
         instance = self.instance_repository.create(
             vehicle_model_id=vehicle.id,
             owner_user_id=user_id,
             acquired_at=now,
         )
 
+        # The vehicle has now been successfully minted.
+        # The spawn MUST be resolved successfully.
         resolved = self.spawn_manager.resolve_catch(
             server_id=server_id,
             model_id=active_spawn.model_id,

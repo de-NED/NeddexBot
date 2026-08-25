@@ -121,6 +121,41 @@ class SpawnManager:
 
         return self.get_state(server_id).engine.expire_if_needed(now)
 
+    def claim_catch(
+        self,
+        *,
+        server_id: int,
+        model_id: str,
+        now: datetime,
+    ) -> ActiveSpawn | None:
+        """
+        Claim a matching active spawn.
+
+        The spawn is removed from the active state immediately so that
+        another catch cannot claim it while the vehicle instance is being
+        created.
+        """
+
+        return self.get_state(server_id).engine.claim_catch(
+            model_id=model_id,
+            now=now,
+        )
+
+    def restore_spawn(
+        self,
+        *,
+        server_id: int,
+        spawn: ActiveSpawn,
+    ) -> None:
+        """
+        Restore a previously claimed spawn.
+
+        This is used when the ownership/mint operation fails after the
+        spawn has already been claimed.
+        """
+
+        self.get_state(server_id).engine.restore_spawn(spawn)
+
     def resolve_catch(
         self,
         *,
@@ -128,7 +163,12 @@ class SpawnManager:
         model_id: str,
         now: datetime,
     ) -> bool:
-        """Resolve a catch against this server's active spawn."""
+        """
+        Resolve a catch against this server's active spawn.
+
+        Kept as a compatibility wrapper for existing callers.
+        New catch flows should use claim_catch().
+        """
 
         return self.get_state(server_id).engine.resolve_catch(
             model_id=model_id,
