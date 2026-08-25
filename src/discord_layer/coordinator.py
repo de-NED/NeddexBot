@@ -39,6 +39,6 @@ class DiscordSpawnAdapter:
 
         await self.send_spawn_message(
             channel=channel,
-            image_url=vehicle.spawn_image,
+            image_path=vehicle.spawn_image,
             catch_service=catch_service,
         )
