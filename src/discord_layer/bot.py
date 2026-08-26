@@ -27,17 +27,22 @@ class NeddexBot(discord.Client):
 
         super().__init__(intents=intents)
 
-        self.application = NeddexApplication(
+        self.neddex_application = NeddexApplication(
             database_path
         )
 
     async def setup_hook(self) -> None:
-        self.application.initialize()
+        self.neddex_application.initialize()
 
     async def on_message(
         self,
         message: discord.Message,
     ) -> None:
+        print(
+            "ON_MESSAGE",
+            message.author,
+            message.content,
+        )
         await handle_message(
             self,
             message,

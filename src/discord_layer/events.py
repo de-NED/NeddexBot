@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import logging
 
 import discord
 
 from src.application import NeddexApplication
+
+logger = logging.getLogger("neddex")
 
 
 async def handle_message(
@@ -19,6 +22,13 @@ async def handle_message(
     Catching is handled by the button + modal flow.
     """
 
+    logger.info(
+        "Received message from %s in %s: %s",
+        message.author,
+        message.guild,
+        message.content,
+    )
+
     if message.author.bot:
         return
 
@@ -28,7 +38,7 @@ async def handle_message(
     if message.content.startswith("!"):
         return
 
-    application: NeddexApplication = bot.application
+    application: NeddexApplication = bot.neddex_application
 
     if application.spawn_manager is None:
         return

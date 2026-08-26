@@ -55,7 +55,7 @@ def make_bot(
     discord_spawn_adapter,
 ):
     return SimpleNamespace(
-        application=SimpleNamespace(
+        neddex_application=SimpleNamespace(
             spawn_manager=spawn_manager,
             catch_service=catch_service,
             discord_spawn_adapter=discord_spawn_adapter,
