@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import discord
 
@@ -14,6 +14,8 @@ async def handle_message(
     """
     Convert Discord messages into Core activity.
 
+    Core decides whether a spawn occurs.
+    DiscordSpawnAdapter handles presenting the spawn.
     Catching is handled by the button + modal flow.
     """
 
@@ -39,7 +41,7 @@ async def handle_message(
             if not member.bot
         ),
         user_id=message.author.id,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
 
     if result.spawned is None:
@@ -48,17 +50,11 @@ async def handle_message(
     if application.catch_service is None:
         return
 
-    vehicle = application.vehicle_models.get(
-        int(result.spawned.model_id)
-    )
-
-    if vehicle.spawn_image is None:
+    if application.discord_spawn_adapter is None:
         return
 
-    from .spawns import send_spawn_message
-
-    await send_spawn_message(
+    await application.discord_spawn_adapter.handle_spawn_result(
+        result=result,
         channel=message.channel,
-        image_path=vehicle.spawn_image,
         catch_service=application.catch_service,
     )
