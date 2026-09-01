@@ -31,8 +31,9 @@ class CatchService:
     - find the submitted catch name
     - verify the server has an active spawn
     - verify the submitted vehicle matches the active spawn
+    - claim the spawn
     - create the vehicle instance
-    - resolve the spawn after a successful mint
+    - restore the spawn if minting fails
 
     It does NOT:
     - send Discord messages
@@ -121,34 +122,44 @@ class CatchService:
                 reason="wrong_vehicle",
             )
 
-        # Create the vehicle instance first.
+        # Claim the spawn before minting.
         #
-        # This is intentional:
-        # - if minting fails, the active spawn must remain available
-        # - only after a successful mint do we consume the spawn
-        instance = self.instance_repository.create(
-            vehicle_model_id=vehicle.id,
-            owner_user_id=user_id,
-            acquired_at=now,
-        )
-
-        # The vehicle has now been successfully minted.
-        # The spawn MUST be resolved successfully.
-        resolved = self.spawn_manager.resolve_catch(
+        # This prevents another catcher from claiming the same spawn
+        # while the vehicle instance is being created.
+        claimed_spawn = self.spawn_manager.claim_catch(
             server_id=server_id,
             model_id=active_spawn.model_id,
             now=now,
         )
 
-        if not resolved:
-            raise RuntimeError(
-                "Spawn was lost after successful mint."
+        if claimed_spawn is None:
+            return CatchResult(
+                success=False,
+                model_id=vehicle.id,
+                spawn_id=active_spawn.spawn_id,
+                vehicle_instance=None,
+                reason="spawn_already_claimed",
             )
+
+        try:
+            instance = self.instance_repository.create(
+                vehicle_model_id=vehicle.id,
+                owner_user_id=user_id,
+                acquired_at=now,
+            )
+        except Exception:
+            # Minting failed after the spawn was claimed.
+            # Restore the spawn so another player can still catch it.
+            self.spawn_manager.restore_spawn(
+                server_id=server_id,
+                spawn=claimed_spawn,
+            )
+            raise
 
         return CatchResult(
             success=True,
             model_id=vehicle.id,
-            spawn_id=active_spawn.spawn_id,
+            spawn_id=claimed_spawn.spawn_id,
             vehicle_instance=instance,
             reason="caught",
         )

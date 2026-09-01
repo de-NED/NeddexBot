@@ -289,14 +289,16 @@ def test_successful_catch_assigns_correct_owner(tmp_path):
 
     assert len(instances.list_for_owner(987654)) == 1
 
-def test_failed_mint_does_not_consume_spawn(tmp_path):
+
+def test_failed_mint_restores_claimed_spawn(tmp_path):
     _, instances, manager, service, _ = make_system(tmp_path)
 
-    create_spawn(manager)
+    spawn = create_spawn(manager)
 
-    service.instance_repository.create = lambda **kwargs: (
-        (_ for _ in ()).throw(RuntimeError("database failure"))
-    )
+    def failed_create(**kwargs):
+        raise RuntimeError("database failure")
+
+    service.instance_repository.create = failed_create
 
     try:
         service.catch(
@@ -307,9 +309,19 @@ def test_failed_mint_does_not_consume_spawn(tmp_path):
         )
     except RuntimeError as exc:
         assert str(exc) == "database failure"
+    else:
+        raise AssertionError(
+            "CatchService should raise when vehicle minting fails."
+        )
 
-    assert manager.get_active_spawn(100) is not None
+    restored_spawn = manager.get_active_spawn(100)
+
+    assert restored_spawn is not None
+    assert restored_spawn.spawn_id == spawn.spawn_id
+    assert restored_spawn.model_id == spawn.model_id
+
     assert instances.list_for_owner(123) == []
+
 
 def test_expired_catch_never_mints(tmp_path):
     _, instances, manager, service, _ = make_system(tmp_path)
@@ -328,38 +340,29 @@ def test_expired_catch_never_mints(tmp_path):
     assert result.vehicle_instance is None
     assert instances.list_for_owner(123) == []
 
-def test_successful_mint_but_failed_spawn_resolution_does_not_silently_succeed(
-    tmp_path,
-):
+
+def test_successful_claim_prevents_second_claim(tmp_path):
     _, instances, manager, service, _ = make_system(tmp_path)
 
     create_spawn(manager)
 
-    original_resolve = manager.resolve_catch
+    first = service.catch(
+        server_id=100,
+        user_id=123,
+        submitted_name="M4",
+        now=BASE_TIME,
+    )
 
-    def failed_resolve(*, server_id, model_id, now):
-        return False
+    second = service.catch(
+        server_id=100,
+        user_id=456,
+        submitted_name="M4",
+        now=BASE_TIME,
+    )
 
-    manager.resolve_catch = failed_resolve
+    assert first.success is True
+    assert second.success is False
 
-    try:
-        service.catch(
-            server_id=100,
-            user_id=123,
-            submitted_name="M4",
-            now=BASE_TIME,
-        )
-    except RuntimeError as exc:
-        assert str(exc) == "Spawn was lost after successful mint."
-    else:
-        raise AssertionError(
-            "CatchService should raise if spawn resolution fails "
-            "after the vehicle is minted."
-        )
-
-    owned = instances.list_for_owner(123)
-
-    assert len(owned) == 1
-    assert manager.get_active_spawn(100) is not None
-
-    manager.resolve_catch = original_resolve
+    assert len(instances.list_for_owner(123)) == 1
+    assert instances.list_for_owner(456) == []
+    assert manager.get_active_spawn(100) is None

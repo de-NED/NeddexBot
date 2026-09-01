@@ -75,6 +75,54 @@ async def test_catch_modal_submits_to_service():
     )
 
     interaction.response.send_message.assert_awaited_once_with(
-        "caught",
+        "Vehicle caught successfully.",
+        ephemeral=True,
+    )
+
+@pytest.mark.asyncio
+async def test_catch_modal_rejects_dm():
+    catch_service = Mock()
+
+    modal = CatchModal(
+        catch_service=catch_service,
+    )
+
+    interaction = AsyncMock()
+    interaction.guild = None
+
+    await modal.on_submit(interaction)
+
+    catch_service.catch.assert_not_called()
+
+    interaction.response.send_message.assert_awaited_once_with(
+        "You can only catch vehicles inside a server.",
+        ephemeral=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_catch_modal_maps_unknown_vehicle():
+    catch_service = Mock()
+
+    catch_service.catch.return_value = type(
+        "CatchResult",
+        (),
+        {"reason": "unknown_vehicle"},
+    )()
+
+    modal = CatchModal(
+        catch_service=catch_service,
+    )
+
+    modal.vehicle_name._value = "Ferrari"
+
+    interaction = AsyncMock()
+    interaction.guild.id = 123
+    interaction.user.id = 456
+
+    await modal.on_submit(interaction)
+
+    interaction.response.send_message.assert_awaited_once_with(
+        "I don't recognize that vehicle.",
         ephemeral=True,
     )
