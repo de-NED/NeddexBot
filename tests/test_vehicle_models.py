@@ -376,3 +376,37 @@ def test_set_highest_mint_cannot_exceed_limit(repository):
             vehicle.id,
             10001,
         )
+def test_list_all_returns_all_vehicle_models(repository):
+    first = repository.create(
+        manufacturer="Toyota",
+        model_name="Supra",
+        year=1994,
+        rarity_weight=10.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=False,
+        mint_limit=None,
+        catch_names="supra",
+    )
+
+    second = repository.create(
+        manufacturer="Nissan",
+        model_name="Skyline GT-R",
+        year=1999,
+        rarity_weight=5.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=False,
+        spawn_eligible=False,
+        limited=True,
+        mint_limit=100,
+        catch_names="r34; skyline",
+    )
+
+    models = repository.list_all()
+
+    assert [model.id for model in models] == [first.id, second.id]
+    assert models[0].model_name == "Supra"
+    assert models[1].model_name == "Skyline GT-R"

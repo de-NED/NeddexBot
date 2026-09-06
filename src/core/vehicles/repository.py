@@ -222,6 +222,48 @@ class VehicleModelRepository:
             highest_mint=row["highest_mint"],
         )
 
+    def list_all(self) -> list[VehicleModel]:
+        """Return all Vehicle Models for administrative use."""
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    id,
+                    manufacturer,
+                    model_name,
+                    year,
+                    rarity_weight,
+                    spawn_image,
+                    card_image,
+                    enabled,
+                    spawn_eligible,
+                    limited,
+                    mint_limit,
+                    highest_mint
+                FROM vehicle_models
+                ORDER BY id
+                """
+            ).fetchall()
+
+        return [
+            VehicleModel(
+                id=row["id"],
+                manufacturer=row["manufacturer"],
+                model_name=row["model_name"],
+                year=row["year"],
+                rarity_weight=row["rarity_weight"],
+                spawn_image=row["spawn_image"],
+                card_image=row["card_image"],
+                enabled=bool(row["enabled"]),
+                spawn_eligible=bool(row["spawn_eligible"]),
+                limited=bool(row["limited"]),
+                mint_limit=row["mint_limit"],
+                highest_mint=row["highest_mint"],
+            )
+            for row in rows
+        ]
+
     def find_by_catch_name(self, submitted_name: str) -> VehicleModel | None:
         """Find a model using an exact, case-insensitive catch name."""
 
