@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.admin_api.routes.health import router as health_router
 from src.admin_api.routes.vehicles import router as vehicles_router
@@ -17,6 +18,14 @@ def create_app(
     application.initialize()
 
     app = FastAPI(title="Neddex Admin API")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:4321"],
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["Content-Type"],
+    )
 
     app.state.neddex_application = application
 
