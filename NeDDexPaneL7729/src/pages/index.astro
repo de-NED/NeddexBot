@@ -1,0 +1,191 @@
+---
+const stats = [
+	{ label: "Vehicle Models", value: "—" },
+	{ label: "Minted Vehicles", value: "—" },
+	{ label: "Active Spawns", value: "—" },
+];
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Admin Panel</title>
+	</head>
+
+	<body>
+		<header class="topbar">
+			<div>
+				<p class="eyebrow">ADMIN PANEL</p>
+				<h1>Dashboard</h1>
+			</div>
+
+			<div class="status">
+				<span class="status-dot"></span>
+				Local
+			</div>
+		</header>
+
+		<main>
+			<section class="stats">
+				{stats.map((stat) => (
+					<article class="stat-card">
+						<p>{stat.label}</p>
+						<strong>{stat.value}</strong>
+					</article>
+				))}
+			</section>
+
+			<section class="panel">
+				<div>
+					<p class="eyebrow">MANAGEMENT</p>
+					<h2>Vehicles</h2>
+					<p class="muted">
+						Manage vehicle models, spawn settings, rarity, and mint limits.
+					</p>
+				</div>
+
+				<a href="/vehicles" class="button">Manage Vehicles</a>
+			</section>
+		</main>
+	</body>
+</html>
+
+<style>
+	:global(*) {
+		box-sizing: border-box;
+	}
+
+	:global(body) {
+		margin: 0;
+		min-height: 100vh;
+		font-family:
+			Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+			"Segoe UI", sans-serif;
+		background: #0b0d10;
+		color: #f5f7fa;
+	}
+
+	.topbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 32px 48px;
+		border-bottom: 1px solid #20242a;
+	}
+
+	.eyebrow {
+		margin: 0 0 6px;
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		color: #7f8792;
+	}
+
+	h1,
+	h2,
+	p {
+		margin-top: 0;
+	}
+
+	h1 {
+		margin-bottom: 0;
+		font-size: 30px;
+	}
+
+	main {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 48px;
+	}
+
+	.stats {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 16px;
+		margin-bottom: 32px;
+	}
+
+	.stat-card,
+	.panel {
+		border: 1px solid #20242a;
+		border-radius: 12px;
+		background: #111419;
+	}
+
+	.stat-card {
+		padding: 24px;
+	}
+
+	.stat-card p {
+		margin-bottom: 12px;
+		color: #8b939e;
+		font-size: 14px;
+	}
+
+	.stat-card strong {
+		font-size: 32px;
+	}
+
+	.panel {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24px;
+		padding: 28px;
+	}
+
+	h2 {
+		margin-bottom: 8px;
+		font-size: 22px;
+	}
+
+	.muted {
+		margin-bottom: 0;
+		color: #8b939e;
+	}
+
+	.status {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: #9ba3ad;
+		font-size: 13px;
+	}
+
+	.status-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #43d17b;
+	}
+
+	.button {
+		display: inline-block;
+		padding: 11px 16px;
+		border-radius: 8px;
+		background: #f5f7fa;
+		color: #0b0d10;
+		font-size: 14px;
+		font-weight: 700;
+		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	@media (max-width: 700px) {
+		.topbar,
+		main {
+			padding: 24px;
+		}
+
+		.stats {
+			grid-template-columns: 1fr;
+		}
+
+		.panel {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+	}
+</style>
