@@ -346,6 +346,34 @@ class VehicleModelRepository:
             highest_mint=row["highest_mint"],
         )
 
+
+    def delete(self, vehicle_model_id: int) -> None:
+        """Delete a Vehicle Model if it has no minted instances."""
+
+        with self._connect() as connection:
+            try:
+                cursor = connection.execute(
+                    """
+                    DELETE FROM vehicle_models
+                    WHERE id = ?
+                    """,
+                    (vehicle_model_id,),
+                )
+
+                if cursor.rowcount == 0:
+                    raise LookupError(
+                        f"Vehicle Model {vehicle_model_id} does not exist."
+                    )
+
+                connection.commit()
+
+            except sqlite3.IntegrityError as exc:
+                connection.rollback()
+                raise ValueError(
+                    f"Vehicle Model {vehicle_model_id} cannot be deleted "
+                    "because it has minted vehicle instances."
+                ) from exc
+
     def list_all(self) -> list[VehicleModel]:
         """Return all Vehicle Models for administrative use."""
 

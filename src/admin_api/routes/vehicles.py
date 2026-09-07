@@ -1,6 +1,7 @@
 from math import ceil
 
 from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from src.admin_api.schemas import (
     VehicleModelCreateRequest,
@@ -102,6 +103,25 @@ def get_application(request: Request) -> NeddexApplication:
 
     return application
 
+@router.delete("/{vehicle_model_id}", status_code=204)
+async def delete_vehicle(
+    vehicle_model_id: int,
+    request: Request,
+) -> None:
+    application = get_application(request)
+
+    try:
+        application.vehicle_models.delete(vehicle_model_id)
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
 
 @router.get("", response_model=VehicleModelListResponse)
 async def list_vehicles(

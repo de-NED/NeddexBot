@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from src.admin_api.app import create_app
 
+from datetime import datetime, timezone
 
 def test_list_vehicles_returns_vehicle_models(tmp_path: Path) -> None:
     database_path = tmp_path / "test.db"
@@ -235,3 +236,83 @@ def test_list_vehicles_supports_spawn_eligible_filter(
     assert data["total"] == 1
     assert len(data["items"]) == 1
     assert data["items"][0]["model_name"] == "M3"
+
+def test_delete_vehicle_removes_vehicle_model(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "test.db"
+    app = create_app(database_path)
+    application = app.state.neddex_application
+
+    vehicle = application.vehicle_models.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=False,
+        mint_limit=None,
+        catch_names="M4",
+    )
+
+    client = TestClient(app)
+
+    response = client.delete(
+        f"/admin/vehicles/{vehicle.id}"
+    )
+
+    assert response.status_code == 204
+
+    assert application.vehicle_models.list_all() == []
+
+def test_delete_vehicle_returns_404_for_missing_vehicle(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "test.db"
+    app = create_app(database_path)
+
+    client = TestClient(app)
+
+    response = client.delete("/admin/vehicles/999")
+
+    assert response.status_code == 404
+
+def test_delete_vehicle_returns_409_when_vehicle_has_minted_instance(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "test.db"
+    app = create_app(database_path)
+    application = app.state.neddex_application
+
+    vehicle = application.vehicle_models.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=False,
+        mint_limit=10,
+        catch_names="M4",
+    )
+
+    application.vehicle_instances.create(
+        vehicle_model_id=vehicle.id,
+        owner_user_id=123456789,
+        acquired_at=datetime.now(timezone.utc),
+    )
+
+    client = TestClient(app)
+
+    response = client.delete(
+        f"/admin/vehicles/{vehicle.id}"
+    )
+
+    assert response.status_code == 409
+
+    assert application.vehicle_models.get(vehicle.id).id == vehicle.id
