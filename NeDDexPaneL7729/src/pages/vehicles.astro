@@ -327,7 +327,7 @@ const apiUrl = "http://127.0.0.1:8000";
 				alert("Add Vehicle UI coming next.");
 			});
 
-			table.addEventListener("click", (event) => {
+			table.addEventListener("click", async (event) => {
 				const button = event.target.closest("button[data-action]");
 
 				if (!button) {
@@ -342,8 +342,57 @@ const apiUrl = "http://127.0.0.1:8000";
 				}
 
 				if (action === "delete") {
-					alert(`Delete Vehicle ${vehicleId} coming next.`);
-				}
+                    const confirmed = window.confirm(
+                        `Delete Vehicle ${vehicleId}? This cannot be undone.`
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        `${apiUrl}/admin/vehicles/${vehicleId}`,
+                        {
+                            method: "DELETE",
+                        },
+                    );
+
+                    if (response.status === 409) {
+                        const data = await response.json();
+
+                        status.textContent =
+                            data.detail || "This vehicle cannot be deleted.";
+                        status.className = "status error";
+
+                        return;
+                    }
+
+                    if (response.status === 404) {
+                        status.textContent = "Vehicle no longer exists.";
+                        status.className = "status error";
+
+                        await loadVehicles();
+
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`API returned ${response.status}`);
+                    }
+
+                    status.textContent = `Vehicle ${vehicleId} deleted.`;
+                    status.className = "status";
+
+                    await loadVehicles();
+                } catch (error) {
+                    console.error(error);
+
+                    status.textContent =
+                        "Unable to delete vehicle.";
+                    status.className = "status error";
+                }
+            }
 			});
 
 			loadVehicles();
