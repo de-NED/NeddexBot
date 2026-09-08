@@ -1,10 +1,10 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from src.admin_api.app import create_app
 
-from datetime import datetime, timezone
 
 def test_list_vehicles_returns_vehicle_models(tmp_path: Path) -> None:
     database_path = tmp_path / "test.db"
@@ -237,6 +237,60 @@ def test_list_vehicles_supports_spawn_eligible_filter(
     assert len(data["items"]) == 1
     assert data["items"][0]["model_name"] == "M3"
 
+
+def test_update_vehicle(tmp_path: Path) -> None:
+    database_path = tmp_path / "test.db"
+    app = create_app(database_path)
+    application = app.state.neddex_application
+
+    vehicle = application.vehicle_models.create(
+        manufacturer="BMW",
+        model_name="M4",
+        year=2024,
+        rarity_weight=1.0,
+        spawn_image=None,
+        card_image=None,
+        enabled=True,
+        spawn_eligible=True,
+        limited=False,
+        mint_limit=None,
+        catch_names="m4,bmw m4",
+    )
+
+    client = TestClient(app)
+
+    response = client.put(
+        f"/admin/vehicles/{vehicle.id}",
+        json={
+            "manufacturer": "BMW",
+            "model_name": "M4 Competition",
+            "year": 2025,
+            "rarity_weight": 2.0,
+            "spawn_image": None,
+            "card_image": None,
+            "enabled": False,
+            "spawn_eligible": True,
+            "limited": True,
+            "mint_limit": 100,
+            "catch_names": "m4 competition,m4 comp",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["id"] == vehicle.id
+    assert data["manufacturer"] == "BMW"
+    assert data["model_name"] == "M4 Competition"
+    assert data["year"] == 2025
+    assert data["rarity_weight"] == 2.0
+    assert data["enabled"] is False
+    assert data["spawn_eligible"] is True
+    assert data["limited"] is True
+    assert data["mint_limit"] == 100
+
+
 def test_delete_vehicle_removes_vehicle_model(
     tmp_path: Path,
 ) -> None:
@@ -268,6 +322,7 @@ def test_delete_vehicle_removes_vehicle_model(
 
     assert application.vehicle_models.list_all() == []
 
+
 def test_delete_vehicle_returns_404_for_missing_vehicle(
     tmp_path: Path,
 ) -> None:
@@ -279,6 +334,7 @@ def test_delete_vehicle_returns_404_for_missing_vehicle(
     response = client.delete("/admin/vehicles/999")
 
     assert response.status_code == 404
+
 
 def test_delete_vehicle_returns_409_when_vehicle_has_minted_instance(
     tmp_path: Path,
