@@ -54,6 +54,36 @@ async def create_vehicle(
         highest_mint=vehicle.highest_mint,
     )
 
+@router.get("/{vehicle_model_id}", response_model=VehicleModelResponse)
+async def get_vehicle(
+    vehicle_model_id: int,
+    request: Request,
+) -> VehicleModelResponse:
+    application = get_application(request)
+
+    try:
+        vehicle = application.vehicle_models.get(vehicle_model_id)
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    return VehicleModelResponse(
+        id=vehicle.id,
+        manufacturer=vehicle.manufacturer,
+        model_name=vehicle.model_name,
+        year=vehicle.year,
+        rarity_weight=vehicle.rarity_weight,
+        spawn_image=vehicle.spawn_image,
+        card_image=vehicle.card_image,
+        enabled=vehicle.enabled,
+        spawn_eligible=vehicle.spawn_eligible,
+        limited=vehicle.limited,
+        mint_limit=vehicle.mint_limit,
+        highest_mint=vehicle.highest_mint,
+    )
+
 @router.put(
     "/{vehicle_model_id}",
     response_model=VehicleModelResponse,
