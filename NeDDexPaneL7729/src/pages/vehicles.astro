@@ -324,8 +324,8 @@ const apiUrl = "http://127.0.0.1:8000";
 			});
 
 			addVehicleButton.addEventListener("click", () => {
-				alert("Add Vehicle UI coming next.");
-			});
+                window.location.href = "/vehicles/new";
+            });
 
 			table.addEventListener("click", async (event) => {
 				const button = event.target.closest("button[data-action]");

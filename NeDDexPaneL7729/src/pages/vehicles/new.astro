@@ -1,0 +1,493 @@
+---
+const apiUrl = "http://127.0.0.1:8000";
+---
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Add Vehicle — Neddex Admin</title>
+    </head>
+
+    <body>
+        <main class="page">
+            <header class="topbar">
+                <a href="/vehicles" class="back">← Vehicles</a>
+
+                <div>
+                    <div class="eyebrow">MANAGEMENT</div>
+                    <h1>Add Vehicle Model</h1>
+                    <p>Register a new vehicle model in Neddex.</p>
+                </div>
+            </header>
+
+            <section class="card">
+                <form id="vehicle-form">
+                    <div class="grid">
+                        <label>
+                            <span>Manufacturer</span>
+                            <input
+                                id="manufacturer"
+                                name="manufacturer"
+                                type="text"
+                                required
+                            />
+                        </label>
+
+                        <label>
+                            <span>Model Name</span>
+                            <input
+                                id="model-name"
+                                name="model_name"
+                                type="text"
+                                required
+                            />
+                        </label>
+
+                        <label>
+                            <span>Year</span>
+                            <input
+                                id="year"
+                                name="year"
+                                type="number"
+                                min="1886"
+                            />
+                        </label>
+
+                        <label>
+                            <span>Rarity Weight</span>
+                            <input
+                                id="rarity-weight"
+                                name="rarity_weight"
+                                type="number"
+                                step="any"
+                                min="0"
+                                required
+                                value="1"
+                            />
+                        </label>
+
+                        <label>
+                            <span>Spawn Image URL</span>
+                            <input
+                                id="spawn-image"
+                                name="spawn_image"
+                                type="url"
+                            />
+                        </label>
+
+                        <label>
+                            <span>Card Image URL</span>
+                            <input
+                                id="card-image"
+                                name="card_image"
+                                type="url"
+                            />
+                        </label>
+                    </div>
+
+                    <label class="full">
+                        <span>Catch Names</span>
+                        <input
+                            id="catch-names"
+                            name="catch_names"
+                            type="text"
+                            placeholder="bmw m4, m4, competition"
+                            required
+                        />
+                        <small>
+                            Separate multiple catch names with commas.
+                        </small>
+                    </label>
+
+                    <div class="options">
+                        <label class="checkbox">
+                            <input id="enabled" type="checkbox" checked />
+                            <span>Enabled</span>
+                        </label>
+
+                        <label class="checkbox">
+                            <input
+                                id="spawn-eligible"
+                                type="checkbox"
+                                checked
+                            />
+                            <span>Spawn Eligible</span>
+                        </label>
+
+                        <label class="checkbox">
+                            <input id="limited" type="checkbox" />
+                            <span>Limited</span>
+                        </label>
+                    </div>
+
+                    <div id="mint-limit-wrapper" class="mint-limit hidden">
+                        <label>
+                            <span>Mint Limit</span>
+                            <input
+                                id="mint-limit"
+                                type="number"
+                                min="1"
+                                step="1"
+                            />
+                        </label>
+                    </div>
+
+                    <div id="status" class="status"></div>
+
+                    <div class="actions">
+                        <a href="/vehicles" class="button secondary">
+                            Cancel
+                        </a>
+
+                        <button type="submit" class="button primary">
+                            Create Vehicle
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </main>
+
+        <script define:vars={{ apiUrl }}>
+            const form = document.querySelector("#vehicle-form");
+            const status = document.querySelector("#status");
+            const limited = document.querySelector("#limited");
+            const mintLimitWrapper = document.querySelector(
+                "#mint-limit-wrapper",
+            );
+            const mintLimit = document.querySelector("#mint-limit");
+
+            limited.addEventListener("change", () => {
+                mintLimitWrapper.classList.toggle(
+                    "hidden",
+                    !limited.checked,
+                );
+
+                mintLimit.required = limited.checked;
+
+                if (!limited.checked) {
+                    mintLimit.value = "";
+                }
+            });
+
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                status.textContent = "Creating vehicle...";
+                status.className = "status";
+
+                const yearValue =
+                    document.querySelector("#year").value.trim();
+
+                const rarityWeight = Number(
+                    document.querySelector("#rarity-weight").value,
+                );
+
+                const mintLimitValue = mintLimit.value.trim();
+
+                const payload = {
+                    manufacturer: document
+                        .querySelector("#manufacturer")
+                        .value.trim(),
+
+                    model_name: document
+                        .querySelector("#model-name")
+                        .value.trim(),
+
+                    year:
+                        yearValue === ""
+                            ? null
+                            : Number(yearValue),
+
+                    rarity_weight: rarityWeight,
+
+                    spawn_image:
+                        document
+                            .querySelector("#spawn-image")
+                            .value.trim() || null,
+
+                    card_image:
+                        document
+                            .querySelector("#card-image")
+                            .value.trim() || null,
+
+                    enabled:
+                        document.querySelector("#enabled").checked,
+
+                    spawn_eligible:
+                        document.querySelector("#spawn-eligible").checked,
+
+                    limited: limited.checked,
+
+                    mint_limit:
+                        limited.checked
+                            ? Number(mintLimitValue)
+                            : null,
+
+                    catch_names:
+                        document
+                            .querySelector("#catch-names")
+                            .value.trim(),
+                };
+
+                if (!Number.isFinite(rarityWeight)) {
+                    status.textContent =
+                        "Rarity weight must be a valid number.";
+                    status.className = "status error";
+                    return;
+                }
+
+                if (
+                    payload.limited &&
+                    (!Number.isInteger(payload.mint_limit) ||
+                        payload.mint_limit < 1)
+                ) {
+                    status.textContent =
+                        "Mint limit must be a positive whole number.";
+                    status.className = "status error";
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        `${apiUrl}/admin/vehicles`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(payload),
+                        },
+                    );
+
+                    const data = await response
+                        .json()
+                        .catch(() => null);
+
+                    if (!response.ok) {
+                        throw new Error(
+                            data?.detail ||
+                                `API returned ${response.status}`,
+                        );
+                    }
+
+                    window.location.href = "/vehicles";
+                } catch (error) {
+                    console.error(error);
+
+                    status.textContent =
+                        error instanceof Error
+                            ? error.message
+                            : "Unable to create vehicle.";
+
+                    status.className = "status error";
+                }
+            });
+        </script>
+
+        <style>
+            :global(*) {
+                box-sizing: border-box;
+            }
+
+            :global(body) {
+                margin: 0;
+                background: #090b10;
+                color: #f3f4f6;
+                font-family:
+                    Inter, ui-sans-serif, system-ui, -apple-system,
+                    BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+
+            .page {
+                width: min(1100px, calc(100% - 40px));
+                margin: 0 auto;
+                padding: 40px 0 70px;
+            }
+
+            .topbar {
+                margin-bottom: 30px;
+            }
+
+            .back {
+                display: inline-block;
+                margin-bottom: 28px;
+                color: #9ca3af;
+                text-decoration: none;
+                font-size: 14px;
+            }
+
+            .back:hover {
+                color: #fff;
+            }
+
+            .eyebrow {
+                margin-bottom: 8px;
+                color: #8b93a1;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.14em;
+            }
+
+            h1 {
+                margin: 0;
+                font-size: 32px;
+                line-height: 1.1;
+            }
+
+            p {
+                margin: 10px 0 0;
+                color: #8f96a3;
+            }
+
+            .card {
+                padding: 28px;
+                border: 1px solid #20242d;
+                border-radius: 14px;
+                background: #10131a;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 22px;
+            }
+
+            label {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            label span {
+                color: #cdd2da;
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            input {
+                width: 100%;
+                padding: 12px 13px;
+                border: 1px solid #292e38;
+                border-radius: 8px;
+                outline: none;
+                background: #0b0e14;
+                color: #fff;
+                font: inherit;
+            }
+
+            input:focus {
+                border-color: #596273;
+            }
+
+            .full {
+                margin-top: 22px;
+            }
+
+            small {
+                color: #737b88;
+                font-size: 12px;
+            }
+
+            .options {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 24px;
+                margin-top: 26px;
+                padding-top: 24px;
+                border-top: 1px solid #20242d;
+            }
+
+            .checkbox {
+                flex-direction: row;
+                align-items: center;
+                gap: 9px;
+            }
+
+            .checkbox input {
+                width: 16px;
+                height: 16px;
+            }
+
+            .mint-limit {
+                width: 260px;
+                margin-top: 22px;
+            }
+
+            .hidden {
+                display: none;
+            }
+
+            .status {
+                min-height: 20px;
+                margin-top: 24px;
+                color: #9ca3af;
+                font-size: 13px;
+            }
+
+            .status.error {
+                color: #f87171;
+            }
+
+            .actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+                margin-top: 24px;
+            }
+
+            .button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 42px;
+                padding: 0 17px;
+                border-radius: 8px;
+                border: 1px solid transparent;
+                font: inherit;
+                font-size: 13px;
+                font-weight: 600;
+                text-decoration: none;
+                cursor: pointer;
+            }
+
+            .secondary {
+                border-color: #292e38;
+                background: #151922;
+                color: #cdd2da;
+            }
+
+            .primary {
+                background: #f3f4f6;
+                color: #090b10;
+            }
+
+            .button:hover {
+                opacity: 0.9;
+            }
+
+            @media (max-width: 700px) {
+                .page {
+                    width: min(100% - 24px, 1100px);
+                    padding-top: 24px;
+                }
+
+                .card {
+                    padding: 20px;
+                }
+
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .actions {
+                    flex-direction: column-reverse;
+                }
+
+                .button {
+                    width: 100%;
+                }
+            }
+        </style>
+    </body>
+</html>
