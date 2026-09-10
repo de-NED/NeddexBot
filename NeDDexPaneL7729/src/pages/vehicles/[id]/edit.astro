@@ -1,0 +1,469 @@
+---
+const apiUrl = "http://127.0.0.1:8000";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Vehicle Model</title>
+
+    <style>
+      :global(*) {
+        box-sizing: border-box;
+      }
+
+      :global(body) {
+        margin: 0;
+        background: #0b0d10;
+        color: #f1f3f5;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      .page {
+        min-height: 100vh;
+        padding: 40px 24px 80px;
+      }
+
+      .container {
+        width: min(900px, 100%);
+        margin: 0 auto;
+      }
+
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #9ca3af;
+        text-decoration: none;
+        font-size: 14px;
+        margin-bottom: 32px;
+      }
+
+      .back:hover {
+        color: #fff;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: #8b929c;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(28px, 5vw, 42px);
+        letter-spacing: -0.03em;
+      }
+
+      .subtitle {
+        margin: 10px 0 32px;
+        color: #8b929c;
+        line-height: 1.6;
+      }
+
+      .form {
+        display: grid;
+        gap: 20px;
+        padding: 28px;
+        border: 1px solid #20242a;
+        border-radius: 16px;
+        background: #111419;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        color: #c9ced5;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid #292e36;
+        border-radius: 9px;
+        background: #0b0d10;
+        color: #f1f3f5;
+        padding: 11px 12px;
+        font: inherit;
+        outline: none;
+      }
+
+      input:focus,
+      textarea:focus {
+        border-color: #59616d;
+      }
+
+      textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+
+      .checkboxes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .checkbox {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 46px;
+        padding: 0 12px;
+        border: 1px solid #292e36;
+        border-radius: 9px;
+        background: #0b0d10;
+      }
+
+      .checkbox input {
+        width: auto;
+        margin: 0;
+      }
+
+      .checkbox label {
+        cursor: pointer;
+      }
+
+      .mint-limit {
+        display: none;
+      }
+
+      .mint-limit.visible {
+        display: grid;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-top: 8px;
+      }
+
+      button,
+      .cancel {
+        border-radius: 9px;
+        padding: 11px 18px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .cancel {
+        border: 1px solid #292e36;
+        background: transparent;
+        color: #c9ced5;
+      }
+
+      button {
+        border: 1px solid #fff;
+        background: #fff;
+        color: #0b0d10;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.6;
+      }
+
+      .status {
+        min-height: 20px;
+        margin: 0;
+        color: #8b929c;
+        font-size: 14px;
+      }
+
+      .status.error {
+        color: #f87171;
+      }
+
+      @media (max-width: 700px) {
+        .grid,
+        .checkboxes {
+          grid-template-columns: 1fr;
+        }
+
+        .field.full {
+          grid-column: auto;
+        }
+
+        .form {
+          padding: 20px;
+        }
+
+        .actions {
+          flex-direction: column-reverse;
+        }
+
+        button,
+        .cancel {
+          width: 100%;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <div class="container">
+        <a class="back" href="/vehicles">← Back to Vehicles</a>
+
+        <p class="eyebrow">MANAGEMENT</p>
+        <h1>Edit Vehicle Model</h1>
+        <p class="subtitle">
+          Update the catalog definition for this vehicle model.
+        </p>
+
+        <form class="form" id="vehicle-form">
+          <div class="grid">
+            <div class="field">
+              <label for="manufacturer">Manufacturer</label>
+              <input id="manufacturer" name="manufacturer" required />
+            </div>
+
+            <div class="field">
+              <label for="model-name">Model Name</label>
+              <input id="model-name" name="model_name" required />
+            </div>
+
+            <div class="field">
+              <label for="year">Year</label>
+              <input id="year" name="year" type="number" min="1886" />
+            </div>
+
+            <div class="field">
+              <label for="rarity-weight">Rarity Weight</label>
+              <input
+                id="rarity-weight"
+                name="rarity_weight"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+
+            <div class="field full">
+              <label for="spawn-image">Spawn Image URL</label>
+              <input id="spawn-image" name="spawn_image" type="url" />
+            </div>
+
+            <div class="field full">
+              <label for="card-image">Card Image URL</label>
+              <input id="card-image" name="card_image" type="url" />
+            </div>
+
+            <div class="field full">
+              <label for="catch-names">Catch Names</label>
+              <textarea
+                id="catch-names"
+                name="catch_names"
+                required
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="checkboxes">
+            <div class="checkbox">
+              <input id="enabled" name="enabled" type="checkbox" />
+              <label for="enabled">Enabled</label>
+            </div>
+
+            <div class="checkbox">
+              <input
+                id="spawn-eligible"
+                name="spawn_eligible"
+                type="checkbox"
+              />
+              <label for="spawn-eligible">Spawn Eligible</label>
+            </div>
+
+            <div class="checkbox">
+              <input id="limited" name="limited" type="checkbox" />
+              <label for="limited">Limited</label>
+            </div>
+          </div>
+
+          <div class="field mint-limit" id="mint-limit-field">
+            <label for="mint-limit">Mint Limit</label>
+            <input
+              id="mint-limit"
+              name="mint_limit"
+              type="number"
+              min="1"
+            />
+          </div>
+
+          <p class="status" id="status"></p>
+
+          <div class="actions">
+            <a class="cancel" href="/vehicles">Cancel</a>
+            <button id="save-button" type="submit">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <script define:vars={{ apiUrl }}>
+      const form = document.querySelector("#vehicle-form");
+      const status = document.querySelector("#status");
+      const saveButton = document.querySelector("#save-button");
+
+      const manufacturer = document.querySelector("#manufacturer");
+      const modelName = document.querySelector("#model-name");
+      const year = document.querySelector("#year");
+      const rarityWeight = document.querySelector("#rarity-weight");
+      const spawnImage = document.querySelector("#spawn-image");
+      const cardImage = document.querySelector("#card-image");
+      const catchNames = document.querySelector("#catch-names");
+      const enabled = document.querySelector("#enabled");
+      const spawnEligible = document.querySelector("#spawn-eligible");
+      const limited = document.querySelector("#limited");
+      const mintLimit = document.querySelector("#mint-limit");
+      const mintLimitField = document.querySelector("#mint-limit-field");
+
+      const vehicleId = window.location.pathname
+        .split("/")
+        .filter(Boolean)
+        .at(-2);
+
+      function updateMintLimitVisibility() {
+        mintLimitField.classList.toggle("visible", limited.checked);
+      }
+
+      async function loadVehicle() {
+        try {
+          const response = await fetch(
+            `${apiUrl}/admin/vehicles/${vehicleId}`,
+          );
+
+          if (response.status === 404) {
+            throw new Error("Vehicle Model not found.");
+          }
+
+          if (!response.ok) {
+            throw new Error(`API returned ${response.status}`);
+          }
+
+          const vehicle = await response.json();
+
+          manufacturer.value = vehicle.manufacturer;
+          modelName.value = vehicle.model_name;
+          year.value = vehicle.year ?? "";
+          rarityWeight.value = vehicle.rarity_weight;
+          spawnImage.value = vehicle.spawn_image ?? "";
+          cardImage.value = vehicle.card_image ?? "";
+          catchNames.value = vehicle.catch_names ?? "";
+          enabled.checked = vehicle.enabled;
+          spawnEligible.checked = vehicle.spawn_eligible;
+          limited.checked = vehicle.limited;
+          mintLimit.value = vehicle.mint_limit ?? "";
+
+          updateMintLimitVisibility();
+        } catch (error) {
+          console.error(error);
+
+          status.textContent =
+            error instanceof Error
+              ? error.message
+              : "Unable to load vehicle model.";
+
+          status.className = "status error";
+          saveButton.disabled = true;
+        }
+      }
+
+      limited.addEventListener("change", updateMintLimitVisibility);
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        status.textContent = "Saving...";
+        status.className = "status";
+        saveButton.disabled = true;
+
+        const payload = {
+          manufacturer: manufacturer.value.trim(),
+          model_name: modelName.value.trim(),
+          year: year.value ? Number(year.value) : null,
+          rarity_weight: Number(rarityWeight.value),
+          spawn_image: spawnImage.value.trim() || null,
+          card_image: cardImage.value.trim() || null,
+          enabled: enabled.checked,
+          spawn_eligible: spawnEligible.checked,
+          limited: limited.checked,
+          mint_limit: limited.checked && mintLimit.value
+            ? Number(mintLimit.value)
+            : null,
+          catch_names: catchNames.value.trim(),
+        };
+
+        try {
+          const response = await fetch(
+            `${apiUrl}/admin/vehicles/${vehicleId}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            },
+          );
+
+          if (!response.ok) {
+            let message = `API returned ${response.status}`;
+
+            try {
+              const data = await response.json();
+
+              if (data.detail) {
+                message = data.detail;
+              }
+            } catch {
+              // Keep the fallback message.
+            }
+
+            throw new Error(message);
+          }
+
+          window.location.href = "/vehicles";
+        } catch (error) {
+          console.error(error);
+
+          status.textContent =
+            error instanceof Error
+              ? error.message
+              : "Unable to save vehicle model.";
+
+          status.className = "status error";
+          saveButton.disabled = false;
+        }
+      });
+
+      loadVehicle();
+    </script>
+  </body>
+</html>

@@ -338,7 +338,8 @@ const apiUrl = "http://127.0.0.1:8000";
 				const vehicleId = button.dataset.id;
 
 				if (action === "edit") {
-					alert(`Edit Vehicle ${vehicleId} coming next.`);
+					window.location.href = `/vehicles/${vehicleId}/edit`;
+                    return;
 				}
 
 				if (action === "delete") {
