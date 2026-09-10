@@ -1,0 +1,737 @@
+---
+const apiUrl = "http://127.0.0.1:8000";
+---
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vehicle Model</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family:
+                Inter, ui-sans-serif, system-ui, -apple-system,
+                BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #0a0a0a;
+            color: #f5f5f5;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top, #171717 0, #0a0a0a 42%);
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .page {
+            width: min(1180px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 32px 0 64px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 42px;
+        }
+
+        .back-link {
+            color: #a3a3a3;
+            font-size: 14px;
+            transition: color 0.15s ease;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+
+        .eyebrow {
+            margin-bottom: 8px;
+            color: #737373;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(30px, 5vw, 48px);
+            line-height: 1.05;
+            letter-spacing: -0.04em;
+        }
+
+        .subtitle {
+            margin: 12px 0 0;
+            color: #737373;
+            font-size: 15px;
+        }
+
+        .status {
+            display: none;
+            margin-bottom: 24px;
+            padding: 14px 16px;
+            border: 1px solid #262626;
+            border-radius: 12px;
+            background: #111;
+            color: #a3a3a3;
+            font-size: 14px;
+        }
+
+        .status.visible {
+            display: block;
+        }
+
+        .status.error {
+            border-color: #5f1d1d;
+            color: #fca5a5;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.85fr);
+            gap: 20px;
+        }
+
+        .stack {
+            display: grid;
+            gap: 20px;
+        }
+
+        .card {
+            border: 1px solid #262626;
+            border-radius: 16px;
+            background: rgba(17, 17, 17, 0.88);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 22px 24px 18px;
+            border-bottom: 1px solid #202020;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 16px;
+            letter-spacing: -0.01em;
+        }
+
+        .card-header p {
+            margin: 7px 0 0;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 22px 28px;
+        }
+
+        .info-label {
+            margin-bottom: 6px;
+            color: #666;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            color: #f5f5f5;
+            font-size: 15px;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+
+        .muted {
+            color: #666;
+            font-weight: 400;
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 0 10px;
+            border: 1px solid #303030;
+            border-radius: 999px;
+            background: #151515;
+            color: #d4d4d4;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.off {
+            color: #737373;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .image-box {
+            min-height: 220px;
+            border: 1px solid #242424;
+            border-radius: 12px;
+            background: #0d0d0d;
+            overflow: hidden;
+        }
+
+        .image-box img {
+            display: block;
+            width: 100%;
+            height: 220px;
+            object-fit: contain;
+            background: #0d0d0d;
+        }
+
+        .image-label {
+            padding: 11px 13px;
+            border-top: 1px solid #242424;
+            color: #737373;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .image-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 220px;
+            padding: 20px;
+            color: #525252;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .mint-number {
+            margin-bottom: 6px;
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+        }
+
+        .mint-description {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .progress {
+            height: 7px;
+            margin-top: 20px;
+            border-radius: 999px;
+            background: #242424;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: #d4d4d4;
+            transition: width 0.2s ease;
+        }
+
+        .spec-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 18px;
+            border: 1px dashed #303030;
+            border-radius: 12px;
+        }
+
+        .spec-placeholder strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .spec-placeholder span {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .coming-soon {
+            flex-shrink: 0;
+            padding: 7px 10px;
+            border: 1px solid #303030;
+            border-radius: 999px;
+            color: #737373;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 15px;
+            border: 1px solid #303030;
+            border-radius: 9px;
+            background: #171717;
+            color: #f5f5f5;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition:
+                background 0.15s ease,
+                border-color 0.15s ease;
+        }
+
+        .button:hover {
+            border-color: #444;
+            background: #202020;
+        }
+
+        @media (max-width: 800px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .page {
+                width: min(100% - 24px, 1180px);
+                padding-top: 20px;
+            }
+
+            .topbar {
+                margin-bottom: 30px;
+            }
+
+            .info-grid,
+            .image-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-body {
+                padding: 18px;
+            }
+
+            .card-header {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="page">
+        <div class="topbar">
+            <div>
+                <div class="eyebrow">Management</div>
+                <h1 id="page-title">Vehicle Model</h1>
+                <p class="subtitle" id="page-subtitle">Loading vehicle model...</p>
+            </div>
+
+            <a class="back-link" href="/vehicles">← Back to Vehicles</a>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div id="content" style="display: none;">
+            <div class="grid">
+                <div class="stack">
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>Basic Information</h2>
+                            <p>Core identity and configuration for this vehicle model.</p>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div>
+                                    <div class="info-label">ID</div>
+                                    <div class="info-value" id="vehicle-id"></div>
+                                </div>
+
+                                <div>
+                                    <div class="info-label">Manufacturer</div>
+                                    <div class="info-value" id="manufacturer"></div>
+                                </div>
+
+                                <div>
+                                    <div class="info-label">Model</div>
+                                    <div class="info-value" id="model-name"></div>
+                                </div>
+
+                                <div>
+                                    <div class="info-label">Year</div>
+                                    <div class="info-value" id="year"></div>
+                                </div>
+
+                                <div>
+                                    <div class="info-label">Rarity Weight</div>
+                                    <div class="info-value" id="rarity-weight"></div>
+                                </div>
+
+                                <div>
+                                    <div class="info-label">Catch Names</div>
+                                    <div class="info-value" id="catch-names"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>Spawn Configuration</h2>
+                            <p>Controls whether this model can participate in spawning.</p>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="badge-row">
+                                <span id="enabled-badge" class="badge"></span>
+                                <span id="spawn-badge" class="badge"></span>
+                                <span id="limited-badge" class="badge"></span>
+                            </div>
+
+                            <div
+                                id="mint-limit-container"
+                                class="info-grid"
+                                style="margin-top: 24px;"
+                            >
+                                <div>
+                                    <div class="info-label">Mint Limit</div>
+                                    <div class="info-value" id="mint-limit"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>Specifications</h2>
+                            <p>Vehicle variants and detailed specification data.</p>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="spec-placeholder">
+                                <div>
+                                    <strong>Specifications plugin</strong>
+                                    <span>
+                                        Specs will be managed here when the Specs plugin is implemented.
+                                    </span>
+                                </div>
+
+                                <div class="coming-soon">Coming Soon</div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="stack">
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>Mint Status</h2>
+                            <p>Current supply state for this vehicle model.</p>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="mint-number" id="highest-mint">0</div>
+                            <div class="mint-description" id="mint-description">
+                                Total minted instances.
+                            </div>
+
+                            <div class="progress">
+                                <div id="mint-progress" class="progress-bar"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>Images</h2>
+                            <p>Current model artwork configured in the admin panel.</p>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="image-grid">
+                                <div class="image-box">
+                                    <div id="spawn-image-container">
+                                        <div class="image-empty">
+                                            No spawn image configured.
+                                        </div>
+                                    </div>
+                                    <div class="image-label">Spawn Image</div>
+                                </div>
+
+                                <div class="image-box">
+                                    <div id="card-image-container">
+                                        <div class="image-empty">
+                                            No card image configured.
+                                        </div>
+                                    </div>
+                                    <div class="image-label">Card Image</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="actions">
+                        <button
+                            id="edit-button"
+                            type="button"
+                            class="button"
+                        >
+                            Edit Vehicle Model
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const apiUrl = "http://127.0.0.1:8000";
+
+        const vehicleId = window.location.pathname
+            .split("/")
+            .filter(Boolean)
+            .at(-1);
+
+        const statusElement = document.getElementById("status");
+        const contentElement = document.getElementById("content");
+
+        function showStatus(message, isError = false) {
+            statusElement.textContent = message;
+            statusElement.classList.add("visible");
+
+            if (isError) {
+                statusElement.classList.add("error");
+            } else {
+                statusElement.classList.remove("error");
+            }
+        }
+
+        function setText(id, value) {
+            const element = document.getElementById(id);
+
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        function setBadge(id, enabled, enabledText, disabledText) {
+            const element = document.getElementById(id);
+
+            if (!element) {
+                return;
+            }
+
+            element.textContent = enabled ? enabledText : disabledText;
+            element.classList.toggle("off", !enabled);
+        }
+
+        function setImage(containerId, url, alt) {
+            const container = document.getElementById(containerId);
+
+            if (!container) {
+                return;
+            }
+
+            if (!url) {
+                return;
+            }
+
+            container.innerHTML = "";
+
+            const image = document.createElement("img");
+            image.src = url;
+            image.alt = alt;
+
+            image.addEventListener("error", () => {
+                container.innerHTML = `
+                    <div class="image-empty">
+                        Image could not be loaded.
+                    </div>
+                `;
+            });
+
+            container.appendChild(image);
+        }
+
+        async function loadVehicle() {
+            if (!vehicleId) {
+                showStatus("Vehicle Model ID is missing.", true);
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${apiUrl}/admin/vehicles/${vehicleId}`
+                );
+
+                if (!response.ok) {
+                    let detail = `Failed to load Vehicle Model ${vehicleId}.`;
+
+                    try {
+                        const errorData = await response.json();
+
+                        if (errorData.detail) {
+                            detail = errorData.detail;
+                        }
+                    } catch {
+                        // Ignore invalid error responses.
+                    }
+
+                    throw new Error(detail);
+                }
+
+                const vehicle = await response.json();
+
+                document.title =
+                    `${vehicle.manufacturer} ${vehicle.model_name} · Vehicle Model`;
+
+                setText(
+                    "page-title",
+                    `${vehicle.manufacturer} ${vehicle.model_name}`
+                );
+
+                setText(
+                    "page-subtitle",
+                    vehicle.year
+                        ? `${vehicle.year} · Vehicle Model #${vehicle.id}`
+                        : `Vehicle Model #${vehicle.id}`
+                );
+
+                setText("vehicle-id", vehicle.id);
+                setText("manufacturer", vehicle.manufacturer);
+                setText("model-name", vehicle.model_name);
+                setText("year", vehicle.year ?? "—");
+                setText("rarity-weight", vehicle.rarity_weight);
+                setText(
+                    "catch-names",
+                    vehicle.catch_names ?? "Not available"
+                );
+
+                setBadge(
+                    "enabled-badge",
+                    vehicle.enabled,
+                    "Enabled",
+                    "Disabled"
+                );
+
+                setBadge(
+                    "spawn-badge",
+                    vehicle.spawn_eligible,
+                    "Spawn Eligible",
+                    "Spawn Disabled"
+                );
+
+                setBadge(
+                    "limited-badge",
+                    vehicle.limited,
+                    "Limited",
+                    "Unlimited"
+                );
+
+                setText(
+                    "mint-limit",
+                    vehicle.limited
+                        ? vehicle.mint_limit ?? "No limit configured"
+                        : "Unlimited"
+                );
+
+                const highestMint = Number(vehicle.highest_mint ?? 0);
+
+                setText("highest-mint", highestMint);
+
+                if (vehicle.limited && vehicle.mint_limit) {
+                    setText(
+                        "mint-description",
+                        `${highestMint} of ${vehicle.mint_limit} minted`
+                    );
+
+                    const percentage = Math.min(
+                        (highestMint / vehicle.mint_limit) * 100,
+                        100
+                    );
+
+                    document.getElementById("mint-progress").style.width =
+                        `${percentage}%`;
+                } else {
+                    setText(
+                        "mint-description",
+                        "Total minted instances."
+                    );
+
+                    document.getElementById("mint-progress").style.width =
+                        "0%";
+                }
+
+                setImage(
+                    "spawn-image-container",
+                    vehicle.spawn_image,
+                    `${vehicle.manufacturer} ${vehicle.model_name} spawn image`
+                );
+
+                setImage(
+                    "card-image-container",
+                    vehicle.card_image,
+                    `${vehicle.manufacturer} ${vehicle.model_name} card image`
+                );
+
+                document.getElementById("edit-button").addEventListener(
+                    "click",
+                    () => {
+                        window.location.href =
+                            `/vehicles/${vehicle.id}/edit`;
+                    }
+                );
+
+                contentElement.style.display = "block";
+            } catch (error) {
+                showStatus(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load Vehicle Model.",
+                    true
+                );
+            }
+        }
+
+        loadVehicle();
+    </script>
+</body>
+</html>

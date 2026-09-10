@@ -1,6 +1,5 @@
 from math import ceil
 
-from fastapi import APIRouter, Query, Request
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from src.admin_api.schemas import (
@@ -9,7 +8,6 @@ from src.admin_api.schemas import (
     VehicleModelResponse,
     VehicleModelUpdateRequest,
 )
-
 from src.application import NeddexApplication
 
 
@@ -18,7 +16,27 @@ router = APIRouter(
     tags=["vehicles"],
 )
 
-@router.post("", response_model=VehicleModelResponse, status_code=201)
+
+def get_application(request: Request) -> NeddexApplication:
+    application = getattr(
+        request.app.state,
+        "neddex_application",
+        None,
+    )
+
+    if application is None:
+        raise RuntimeError(
+            "Neddex application is not configured."
+        )
+
+    return application
+
+
+@router.post(
+    "",
+    response_model=VehicleModelResponse,
+    status_code=201,
+)
 async def create_vehicle(
     payload: VehicleModelCreateRequest,
     request: Request,
@@ -52,108 +70,16 @@ async def create_vehicle(
         limited=vehicle.limited,
         mint_limit=vehicle.mint_limit,
         highest_mint=vehicle.highest_mint,
+        catch_names="; ".join(
+            application.vehicle_models.get_catch_names(vehicle.id)
+        ),
     )
 
-@router.get("/{vehicle_model_id}", response_model=VehicleModelResponse)
-async def get_vehicle(
-    vehicle_model_id: int,
-    request: Request,
-) -> VehicleModelResponse:
-    application = get_application(request)
 
-    try:
-        vehicle = application.vehicle_models.get(vehicle_model_id)
-    except LookupError as exc:
-        raise HTTPException(
-            status_code=404,
-            detail=str(exc),
-        ) from exc
-
-    return VehicleModelResponse(
-        id=vehicle.id,
-        manufacturer=vehicle.manufacturer,
-        model_name=vehicle.model_name,
-        year=vehicle.year,
-        rarity_weight=vehicle.rarity_weight,
-        spawn_image=vehicle.spawn_image,
-        card_image=vehicle.card_image,
-        enabled=vehicle.enabled,
-        spawn_eligible=vehicle.spawn_eligible,
-        limited=vehicle.limited,
-        mint_limit=vehicle.mint_limit,
-        highest_mint=vehicle.highest_mint,
-    )
-
-@router.put(
-    "/{vehicle_model_id}",
-    response_model=VehicleModelResponse,
+@router.get(
+    "",
+    response_model=VehicleModelListResponse,
 )
-async def update_vehicle(
-    vehicle_model_id: int,
-    payload: VehicleModelUpdateRequest,
-    request: Request,
-) -> VehicleModelResponse:
-    application = get_application(request)
-
-    vehicle = application.vehicle_models.update(
-        vehicle_model_id=vehicle_model_id,
-        manufacturer=payload.manufacturer,
-        model_name=payload.model_name,
-        year=payload.year,
-        rarity_weight=payload.rarity_weight,
-        spawn_image=payload.spawn_image,
-        card_image=payload.card_image,
-        enabled=payload.enabled,
-        spawn_eligible=payload.spawn_eligible,
-        limited=payload.limited,
-        mint_limit=payload.mint_limit,
-        catch_names=payload.catch_names,
-    )
-
-    return VehicleModelResponse(
-        id=vehicle.id,
-        manufacturer=vehicle.manufacturer,
-        model_name=vehicle.model_name,
-        year=vehicle.year,
-        rarity_weight=vehicle.rarity_weight,
-        spawn_image=vehicle.spawn_image,
-        card_image=vehicle.card_image,
-        enabled=vehicle.enabled,
-        spawn_eligible=vehicle.spawn_eligible,
-        limited=vehicle.limited,
-        mint_limit=vehicle.mint_limit,
-        highest_mint=vehicle.highest_mint,
-    )
-
-def get_application(request: Request) -> NeddexApplication:
-    application = getattr(request.app.state, "neddex_application", None)
-
-    if application is None:
-        raise RuntimeError("Neddex application is not configured.")
-
-    return application
-
-@router.delete("/{vehicle_model_id}", status_code=204)
-async def delete_vehicle(
-    vehicle_model_id: int,
-    request: Request,
-) -> None:
-    application = get_application(request)
-
-    try:
-        application.vehicle_models.delete(vehicle_model_id)
-    except LookupError as exc:
-        raise HTTPException(
-            status_code=404,
-            detail=str(exc),
-        ) from exc
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=409,
-            detail=str(exc),
-        ) from exc
-
-@router.get("", response_model=VehicleModelListResponse)
 async def list_vehicles(
     request: Request,
     page: int = Query(1, ge=1),
@@ -191,6 +117,9 @@ async def list_vehicles(
                 limited=vehicle.limited,
                 mint_limit=vehicle.mint_limit,
                 highest_mint=vehicle.highest_mint,
+                catch_names="; ".join(
+                    application.vehicle_models.get_catch_names(vehicle.id)
+                ),
             )
             for vehicle in vehicles
         ],
@@ -199,3 +128,119 @@ async def list_vehicles(
         total=total,
         total_pages=total_pages,
     )
+
+
+@router.get(
+    "/{vehicle_model_id}",
+    response_model=VehicleModelResponse,
+)
+async def get_vehicle(
+    vehicle_model_id: int,
+    request: Request,
+) -> VehicleModelResponse:
+    application = get_application(request)
+
+    try:
+        vehicle = application.vehicle_models.get(
+            vehicle_model_id
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    return VehicleModelResponse(
+        id=vehicle.id,
+        manufacturer=vehicle.manufacturer,
+        model_name=vehicle.model_name,
+        year=vehicle.year,
+        rarity_weight=vehicle.rarity_weight,
+        spawn_image=vehicle.spawn_image,
+        card_image=vehicle.card_image,
+        enabled=vehicle.enabled,
+        spawn_eligible=vehicle.spawn_eligible,
+        limited=vehicle.limited,
+        mint_limit=vehicle.mint_limit,
+        highest_mint=vehicle.highest_mint,
+        catch_names="; ".join(
+            application.vehicle_models.get_catch_names(vehicle.id)
+        ),
+    )
+
+
+@router.put(
+    "/{vehicle_model_id}",
+    response_model=VehicleModelResponse,
+)
+async def update_vehicle(
+    vehicle_model_id: int,
+    payload: VehicleModelUpdateRequest,
+    request: Request,
+) -> VehicleModelResponse:
+    application = get_application(request)
+
+    try:
+        vehicle = application.vehicle_models.update(
+            vehicle_model_id=vehicle_model_id,
+            manufacturer=payload.manufacturer,
+            model_name=payload.model_name,
+            year=payload.year,
+            rarity_weight=payload.rarity_weight,
+            spawn_image=payload.spawn_image,
+            card_image=payload.card_image,
+            enabled=payload.enabled,
+            spawn_eligible=payload.spawn_eligible,
+            limited=payload.limited,
+            mint_limit=payload.mint_limit,
+            catch_names=payload.catch_names,
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    return VehicleModelResponse(
+        id=vehicle.id,
+        manufacturer=vehicle.manufacturer,
+        model_name=vehicle.model_name,
+        year=vehicle.year,
+        rarity_weight=vehicle.rarity_weight,
+        spawn_image=vehicle.spawn_image,
+        card_image=vehicle.card_image,
+        enabled=vehicle.enabled,
+        spawn_eligible=vehicle.spawn_eligible,
+        limited=vehicle.limited,
+        mint_limit=vehicle.mint_limit,
+        highest_mint=vehicle.highest_mint,
+        catch_names="; ".join(
+            application.vehicle_models.get_catch_names(vehicle.id)
+        ),
+    )
+
+
+@router.delete(
+    "/{vehicle_model_id}",
+    status_code=204,
+)
+async def delete_vehicle(
+    vehicle_model_id: int,
+    request: Request,
+) -> None:
+    application = get_application(request)
+
+    try:
+        application.vehicle_models.delete(
+            vehicle_model_id
+        )
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc

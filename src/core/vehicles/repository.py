@@ -651,6 +651,25 @@ class VehicleModelRepository:
             for row in rows
         ]
 
+    def get_catch_names(
+        self,
+        vehicle_model_id: int,
+    ) -> list[str]:
+        """Return the stored catch names for a Vehicle Model."""
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT catch_name
+                FROM vehicle_model_catch_names
+                WHERE vehicle_model_id = ?
+                ORDER BY id
+                """,
+                (vehicle_model_id,),
+            ).fetchall()
+
+        return [row["catch_name"] for row in rows]
+
     @staticmethod
     def _parse_catch_names(catch_names: str) -> list[str]:
         """Split the admin catch-name field into individual names."""
