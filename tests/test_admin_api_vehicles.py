@@ -22,7 +22,7 @@ def test_list_vehicles_returns_vehicle_models(tmp_path: Path) -> None:
         spawn_eligible=True,
         limited=False,
         mint_limit=None,
-        catch_names="M4",
+        catch_names="m4",
     )
 
     client = TestClient(app)
@@ -44,6 +44,7 @@ def test_list_vehicles_returns_vehicle_models(tmp_path: Path) -> None:
                 "limited": False,
                 "mint_limit": None,
                 "highest_mint": 0,
+                "catch_names": "m4",
             }
         ],
         "page": 1,
@@ -91,9 +92,7 @@ def test_list_vehicles_supports_pagination(tmp_path: Path) -> None:
     assert [vehicle["id"] for vehicle in data["items"]] == [3, 4]
 
 
-def test_list_vehicles_supports_search(
-    tmp_path: Path,
-) -> None:
+def test_list_vehicles_supports_search(tmp_path: Path) -> None:
     database_path = tmp_path / "test.db"
     app = create_app(database_path)
     application = app.state.neddex_application
@@ -140,9 +139,7 @@ def test_list_vehicles_supports_search(
     assert data["items"][0]["manufacturer"] == "BMW"
 
 
-def test_list_vehicles_supports_enabled_filter(
-    tmp_path: Path,
-) -> None:
+def test_list_vehicles_supports_enabled_filter(tmp_path: Path) -> None:
     database_path = tmp_path / "test.db"
     app = create_app(database_path)
     application = app.state.neddex_application
@@ -272,7 +269,7 @@ def test_update_vehicle(tmp_path: Path) -> None:
             "spawn_eligible": True,
             "limited": True,
             "mint_limit": 100,
-            "catch_names": "m4 competition,m4 comp",
+            "catch_names": "m4 competition; m4 comp",
         },
     )
 
@@ -289,6 +286,7 @@ def test_update_vehicle(tmp_path: Path) -> None:
     assert data["spawn_eligible"] is True
     assert data["limited"] is True
     assert data["mint_limit"] == 100
+    assert data["catch_names"] == "m4 competition; m4 comp"
 
 
 def test_delete_vehicle_removes_vehicle_model(
@@ -319,7 +317,6 @@ def test_delete_vehicle_removes_vehicle_model(
     )
 
     assert response.status_code == 204
-
     assert application.vehicle_models.list_all() == []
 
 
@@ -370,5 +367,4 @@ def test_delete_vehicle_returns_409_when_vehicle_has_minted_instance(
     )
 
     assert response.status_code == 409
-
     assert application.vehicle_models.get(vehicle.id).id == vehicle.id

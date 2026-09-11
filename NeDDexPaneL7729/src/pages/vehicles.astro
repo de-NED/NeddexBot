@@ -237,6 +237,15 @@ const apiUrl = "http://127.0.0.1:8000";
 
 									<td>
 										<div class="actions">
+                                            <button
+												type="button"
+												class="action-button"
+												data-action="view"
+												data-id="${vehicle.id}"
+											>
+												View
+											</button>
+
 											<button
 												type="button"
 												class="action-button"
@@ -336,7 +345,11 @@ const apiUrl = "http://127.0.0.1:8000";
 
 				const action = button.dataset.action;
 				const vehicleId = button.dataset.id;
-
+                if (action === "view") {
+                   window.location.href = `/vehicles/${vehicleId}`;
+                   return;
+                }
+				
 				if (action === "edit") {
 					window.location.href = `/vehicles/${vehicleId}/edit`;
                     return;

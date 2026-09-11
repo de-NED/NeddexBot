@@ -40,6 +40,7 @@ class VehicleModelResponse(BaseModel):
     limited: bool
     mint_limit: int | None
     highest_mint: int
+    catch_names: str
 
 
 class VehicleModelListResponse(BaseModel):
