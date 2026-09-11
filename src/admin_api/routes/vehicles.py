@@ -1,6 +1,8 @@
 from math import ceil
+from pathlib import Path
+from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 
 from src.admin_api.schemas import (
     VehicleModelCreateRequest,
@@ -30,6 +32,90 @@ def get_application(request: Request) -> NeddexApplication:
         )
 
     return application
+
+
+@router.post(
+    "/upload-image",
+)
+async def upload_vehicle_image(
+    request: Request,
+    image: UploadFile = File(...),
+) -> dict[str, str]:
+    application = get_application(request)
+
+    allowed_types = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+    }
+
+    extension = allowed_types.get(image.content_type)
+
+    if extension is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Unsupported image type. "
+                "Use JPEG, PNG, WebP, or GIF."
+            ),
+        )
+
+    assets_directory = (
+        application.database_path.parent
+        / "assets"
+        / "vehicles"
+    )
+
+    assets_directory.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    filename = f"{uuid4().hex}{extension}"
+    destination = assets_directory / filename
+
+    max_size = 10 * 1024 * 1024
+    total_size = 0
+
+    try:
+        with destination.open("wb") as output:
+            while True:
+                chunk = await image.read(1024 * 1024)
+
+                if not chunk:
+                    break
+
+                total_size += len(chunk)
+
+                if total_size > max_size:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="Image file cannot exceed 10 MB.",
+                    )
+
+                output.write(chunk)
+
+    except HTTPException:
+        if destination.exists():
+            destination.unlink()
+        raise
+    except Exception:
+        if destination.exists():
+            destination.unlink()
+        raise
+    finally:
+        await image.close()
+
+    relative_path = (
+        Path("assets")
+        / "vehicles"
+        / filename
+    ).as_posix()
+
+    return {
+        "path": relative_path,
+    }
 
 
 @router.post(
@@ -118,7 +204,9 @@ async def list_vehicles(
                 mint_limit=vehicle.mint_limit,
                 highest_mint=vehicle.highest_mint,
                 catch_names="; ".join(
-                    application.vehicle_models.get_catch_names(vehicle.id)
+                    application.vehicle_models.get_catch_names(
+                        vehicle.id
+                    )
                 ),
             )
             for vehicle in vehicles
