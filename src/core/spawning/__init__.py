@@ -3,6 +3,7 @@ from .engine import ActiveSpawn, SpawnCandidate, SpawnEngine
 from .manager import ServerSpawnState, SpawnManager
 from .model_source import VehicleModelSpawnSource
 from .catch_service import CatchResult, CatchService
+from .spec_source import VehicleSpecSpawnSource
 
 __all__ = [
     "ActiveSpawn",

@@ -194,3 +194,52 @@ class VehicleSpecRepository:
             mint_limit=mint_limit,
             highest_mint=0,
         )
+
+    def get_spawn_eligible_specs(self) -> list[VehicleSpec]:
+        """
+        Return Vehicle Specs currently allowed in the spawn pool.
+        """
+
+        with self._connect() as connection:
+            rows = connection.execute(
+               """
+                SELECT
+                    id,
+                    vehicle_model_id,
+                    name,
+                    rarity_weight,
+                    spawn_image,
+                    card_id,
+                    enabled,
+                    spawn_eligible,
+                    limited,
+                    mint_limit,
+                    highest_mint
+                FROM vehicle_specs
+                WHERE enabled = 1
+                  AND spawn_eligible = 1
+                  AND rarity_weight > 0
+                  AND (
+                        limited = 0
+                        OR highest_mint < mint_limit
+                  )
+                ORDER BY id
+                """
+            ).fetchall()
+
+        return [
+            VehicleSpec(
+                id=row["id"],
+                vehicle_model_id=row["vehicle_model_id"],
+                name=row["name"],
+                rarity_weight=row["rarity_weight"],
+                spawn_image=row["spawn_image"],
+                card_id=row["card_id"],
+                enabled=bool(row["enabled"]),
+                spawn_eligible=bool(row["spawn_eligible"]),
+                limited=bool(row["limited"]),
+                mint_limit=row["mint_limit"],
+                highest_mint=row["highest_mint"],
+            )
+            for row in rows
+        ]

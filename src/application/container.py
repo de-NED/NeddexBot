@@ -7,7 +7,7 @@ from src.core.servers import ServerEligibility
 from src.core.spawning import (
     CatchService,
     SpawnManager,
-    VehicleModelSpawnSource,
+    VehicleSpecSpawnSource,
 )
 
 from src.core.vehicles import (
@@ -49,8 +49,8 @@ class NeddexApplication:
 
         eligibility = ServerEligibility()
 
-        model_source = VehicleModelSpawnSource(
-            self.vehicle_models
+        model_source = VehicleSpecSpawnSource(
+            self.vehicle_specs
         )
 
         self.spawn_manager = SpawnManager(
