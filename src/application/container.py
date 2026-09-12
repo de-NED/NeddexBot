@@ -9,7 +9,11 @@ from src.core.spawning import (
     SpawnManager,
     VehicleModelSpawnSource,
 )
-from src.core.vehicles import VehicleModelRepository
+
+from src.core.vehicles import (
+    VehicleModelRepository,
+    VehicleSpecRepository,
+)
 
 from src.discord_layer.coordinator import DiscordSpawnAdapter
 from src.discord_layer.spawns import send_spawn_message
@@ -25,6 +29,10 @@ class NeddexApplication:
             database_path
         )
 
+        self.vehicle_specs = VehicleSpecRepository(
+            database_path
+        )
+
         self.vehicle_instances = VehicleInstanceRepository(
             database_path
         )
@@ -36,6 +44,7 @@ class NeddexApplication:
 
     def initialize(self) -> None:
         self.vehicle_models.initialize()
+        self.vehicle_specs.initialize()
         self.vehicle_instances.initialize()
 
         eligibility = ServerEligibility()
