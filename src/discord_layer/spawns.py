@@ -21,6 +21,9 @@ async def send_spawn_message(
 
     image_file = Path(image_path)
 
+    if not image_file.is_absolute():
+        image_file = Path.cwd() / "data" / image_file
+
     if not image_file.exists():
         raise FileNotFoundError(
             f"Spawn image does not exist: {image_file}"

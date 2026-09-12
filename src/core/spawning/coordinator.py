@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from src.core.activity import ActivityTracker
-from src.core.servers import ServerEligibility
+from src.core.servers import ServerConfig, ServerEligibility
 
 from .engine import ActiveSpawn, SpawnEngine
 
@@ -47,6 +47,7 @@ class SpawnCoordinator:
         is_bot: bool = False,
         is_webhook: bool = False,
         is_command: bool = False,
+        server_config: ServerConfig | None = None,
     ) -> SpawnActivityResult:
         """
         Process one Discord activity event.
@@ -58,6 +59,7 @@ class SpawnCoordinator:
         if not self.eligibility.is_eligible(
             server_id=server_id,
             human_member_count=human_member_count,
+            server_config=server_config,
         ):
             return SpawnActivityResult(
                 counted=False,

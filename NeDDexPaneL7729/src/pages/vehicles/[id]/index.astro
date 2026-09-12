@@ -192,12 +192,12 @@ const apiUrl = "http://127.0.0.1:8000";
 
         .image-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: 1fr;
             gap: 16px;
         }
 
         .image-box {
-            min-height: 220px;
+            min-width: 0;
             border: 1px solid #242424;
             border-radius: 12px;
             background: #0d0d0d;
@@ -207,7 +207,8 @@ const apiUrl = "http://127.0.0.1:8000";
         .image-box img {
             display: block;
             width: 100%;
-            height: 220px;
+            aspect-ratio: 16 / 9;
+            height: auto;
             object-fit: contain;
             background: #0d0d0d;
         }
@@ -226,7 +227,7 @@ const apiUrl = "http://127.0.0.1:8000";
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 220px;
+            aspect-ratio: 16 / 9;
             padding: 20px;
             color: #525252;
             font-size: 13px;
@@ -339,8 +340,7 @@ const apiUrl = "http://127.0.0.1:8000";
                 margin-bottom: 30px;
             }
 
-            .info-grid,
-            .image-grid {
+            .info-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -361,10 +361,14 @@ const apiUrl = "http://127.0.0.1:8000";
             <div>
                 <div class="eyebrow">Management</div>
                 <h1 id="page-title">Vehicle Model</h1>
-                <p class="subtitle" id="page-subtitle">Loading vehicle model...</p>
+                <p class="subtitle" id="page-subtitle">
+                    Loading vehicle model...
+                </p>
             </div>
 
-            <a class="back-link" href="/vehicles">← Back to Vehicles</a>
+            <a class="back-link" href="/vehicles">
+                ← Back to Vehicles
+            </a>
         </div>
 
         <div id="status" class="status"></div>
@@ -375,7 +379,10 @@ const apiUrl = "http://127.0.0.1:8000";
                     <section class="card">
                         <div class="card-header">
                             <h2>Basic Information</h2>
-                            <p>Core identity and configuration for this vehicle model.</p>
+                            <p>
+                                Core identity and configuration for this
+                                vehicle model.
+                            </p>
                         </div>
 
                         <div class="card-body">
@@ -416,7 +423,10 @@ const apiUrl = "http://127.0.0.1:8000";
                     <section class="card">
                         <div class="card-header">
                             <h2>Spawn Configuration</h2>
-                            <p>Controls whether this model can participate in spawning.</p>
+                            <p>
+                                Controls whether this model can participate
+                                in spawning.
+                            </p>
                         </div>
 
                         <div class="card-body">
@@ -442,7 +452,10 @@ const apiUrl = "http://127.0.0.1:8000";
                     <section class="card">
                         <div class="card-header">
                             <h2>Specifications</h2>
-                            <p>Vehicle variants and detailed specification data.</p>
+                            <p>
+                                Vehicle variants and detailed specification
+                                data.
+                            </p>
                         </div>
 
                         <div class="card-body">
@@ -450,11 +463,14 @@ const apiUrl = "http://127.0.0.1:8000";
                                 <div>
                                     <strong>Specifications plugin</strong>
                                     <span>
-                                        Specs will be managed here when the Specs plugin is implemented.
+                                        Specs will be managed here when the
+                                        Specs plugin is implemented.
                                     </span>
                                 </div>
 
-                                <div class="coming-soon">Coming Soon</div>
+                                <div class="coming-soon">
+                                    Coming Soon
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -464,17 +480,26 @@ const apiUrl = "http://127.0.0.1:8000";
                     <section class="card">
                         <div class="card-header">
                             <h2>Mint Status</h2>
-                            <p>Current supply state for this vehicle model.</p>
+                            <p>
+                                Current supply state for this vehicle model.
+                            </p>
                         </div>
 
                         <div class="card-body">
                             <div class="mint-number" id="highest-mint">0</div>
-                            <div class="mint-description" id="mint-description">
+
+                            <div
+                                class="mint-description"
+                                id="mint-description"
+                            >
                                 Total minted instances.
                             </div>
 
                             <div class="progress">
-                                <div id="mint-progress" class="progress-bar"></div>
+                                <div
+                                    id="mint-progress"
+                                    class="progress-bar"
+                                ></div>
                             </div>
                         </div>
                     </section>
@@ -482,7 +507,10 @@ const apiUrl = "http://127.0.0.1:8000";
                     <section class="card">
                         <div class="card-header">
                             <h2>Images</h2>
-                            <p>Current model artwork configured in the admin panel.</p>
+                            <p>
+                                Current model artwork configured in the
+                                admin panel.
+                            </p>
                         </div>
 
                         <div class="card-body">
@@ -493,7 +521,10 @@ const apiUrl = "http://127.0.0.1:8000";
                                             No spawn image configured.
                                         </div>
                                     </div>
-                                    <div class="image-label">Spawn Image</div>
+
+                                    <div class="image-label">
+                                        Spawn Image
+                                    </div>
                                 </div>
 
                                 <div class="image-box">
@@ -502,7 +533,10 @@ const apiUrl = "http://127.0.0.1:8000";
                                             No card image configured.
                                         </div>
                                     </div>
-                                    <div class="image-label">Card Image</div>
+
+                                    <div class="image-label">
+                                        Card Image
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -522,9 +556,7 @@ const apiUrl = "http://127.0.0.1:8000";
         </div>
     </main>
 
-    <script>
-        const apiUrl = "http://127.0.0.1:8000";
-
+    <script define:vars={{ apiUrl }}>
         const vehicleId = window.location.pathname
             .split("/")
             .filter(Boolean)
@@ -559,26 +591,59 @@ const apiUrl = "http://127.0.0.1:8000";
                 return;
             }
 
-            element.textContent = enabled ? enabledText : disabledText;
+            element.textContent = enabled
+                ? enabledText
+                : disabledText;
+
             element.classList.toggle("off", !enabled);
         }
 
-        function setImage(containerId, url, alt) {
-            const container = document.getElementById(containerId);
+        function getImageUrl(path) {
+            if (!path) {
+                return null;
+            }
+
+            if (
+                path.startsWith("http://") ||
+                path.startsWith("https://")
+            ) {
+                return path;
+            }
+
+            const normalizedPath = path
+                .replace(/^\/+/, "")
+                .replace(/^assets\/vehicles\//, "");
+
+            return `${apiUrl}/admin/vehicles/assets/${encodeURIComponent(
+                normalizedPath,
+            )}`;
+        }
+
+        function setImage(containerId, path, alt) {
+            const container =
+                document.getElementById(containerId);
 
             if (!container) {
                 return;
             }
 
-            if (!url) {
+            if (!path) {
+                return;
+            }
+
+            const imageUrl = getImageUrl(path);
+
+            if (!imageUrl) {
                 return;
             }
 
             container.innerHTML = "";
 
             const image = document.createElement("img");
-            image.src = url;
+
+            image.src = imageUrl;
             image.alt = alt;
+            image.loading = "lazy";
 
             image.addEventListener("error", () => {
                 container.innerHTML = `
@@ -593,17 +658,21 @@ const apiUrl = "http://127.0.0.1:8000";
 
         async function loadVehicle() {
             if (!vehicleId) {
-                showStatus("Vehicle Model ID is missing.", true);
+                showStatus(
+                    "Vehicle Model ID is missing.",
+                    true,
+                );
                 return;
             }
 
             try {
                 const response = await fetch(
-                    `${apiUrl}/admin/vehicles/${vehicleId}`
+                    `${apiUrl}/admin/vehicles/${vehicleId}`,
                 );
 
                 if (!response.ok) {
-                    let detail = `Failed to load Vehicle Model ${vehicleId}.`;
+                    let detail =
+                        `Failed to load Vehicle Model ${vehicleId}.`;
 
                     try {
                         const errorData = await response.json();
@@ -625,14 +694,14 @@ const apiUrl = "http://127.0.0.1:8000";
 
                 setText(
                     "page-title",
-                    `${vehicle.manufacturer} ${vehicle.model_name}`
+                    `${vehicle.manufacturer} ${vehicle.model_name}`,
                 );
 
                 setText(
                     "page-subtitle",
                     vehicle.year
                         ? `${vehicle.year} · Vehicle Model #${vehicle.id}`
-                        : `Vehicle Model #${vehicle.id}`
+                        : `Vehicle Model #${vehicle.id}`,
                 );
 
                 setText("vehicle-id", vehicle.id);
@@ -640,85 +709,92 @@ const apiUrl = "http://127.0.0.1:8000";
                 setText("model-name", vehicle.model_name);
                 setText("year", vehicle.year ?? "—");
                 setText("rarity-weight", vehicle.rarity_weight);
+
                 setText(
                     "catch-names",
-                    vehicle.catch_names ?? "Not available"
+                    vehicle.catch_names ?? "Not available",
                 );
 
                 setBadge(
                     "enabled-badge",
                     vehicle.enabled,
                     "Enabled",
-                    "Disabled"
+                    "Disabled",
                 );
 
                 setBadge(
                     "spawn-badge",
                     vehicle.spawn_eligible,
                     "Spawn Eligible",
-                    "Spawn Disabled"
+                    "Spawn Disabled",
                 );
 
                 setBadge(
                     "limited-badge",
                     vehicle.limited,
                     "Limited",
-                    "Unlimited"
+                    "Unlimited",
                 );
 
                 setText(
                     "mint-limit",
                     vehicle.limited
-                        ? vehicle.mint_limit ?? "No limit configured"
-                        : "Unlimited"
+                        ? vehicle.mint_limit ??
+                            "No limit configured"
+                        : "Unlimited",
                 );
 
-                const highestMint = Number(vehicle.highest_mint ?? 0);
+                const highestMint =
+                    Number(vehicle.highest_mint ?? 0);
 
                 setText("highest-mint", highestMint);
 
-                if (vehicle.limited && vehicle.mint_limit) {
+                if (
+                    vehicle.limited &&
+                    vehicle.mint_limit
+                ) {
                     setText(
                         "mint-description",
-                        `${highestMint} of ${vehicle.mint_limit} minted`
+                        `${highestMint} of ${vehicle.mint_limit} minted`,
                     );
 
                     const percentage = Math.min(
                         (highestMint / vehicle.mint_limit) * 100,
-                        100
+                        100,
                     );
 
-                    document.getElementById("mint-progress").style.width =
-                        `${percentage}%`;
+                    document.getElementById(
+                        "mint-progress",
+                    ).style.width = `${percentage}%`;
                 } else {
                     setText(
                         "mint-description",
-                        "Total minted instances."
+                        "Total minted instances.",
                     );
 
-                    document.getElementById("mint-progress").style.width =
-                        "0%";
+                    document.getElementById(
+                        "mint-progress",
+                    ).style.width = "0%";
                 }
 
                 setImage(
                     "spawn-image-container",
                     vehicle.spawn_image,
-                    `${vehicle.manufacturer} ${vehicle.model_name} spawn image`
+                    `${vehicle.manufacturer} ${vehicle.model_name} spawn image`,
                 );
 
                 setImage(
                     "card-image-container",
                     vehicle.card_image,
-                    `${vehicle.manufacturer} ${vehicle.model_name} card image`
+                    `${vehicle.manufacturer} ${vehicle.model_name} card image`,
                 );
 
-                document.getElementById("edit-button").addEventListener(
-                    "click",
-                    () => {
+                document
+                    .getElementById("edit-button")
+                    .addEventListener("click", () => {
                         window.location.href =
                             `/vehicles/${vehicle.id}/edit`;
-                    }
-                );
+                    });
 
                 contentElement.style.display = "block";
             } catch (error) {
@@ -726,7 +802,7 @@ const apiUrl = "http://127.0.0.1:8000";
                     error instanceof Error
                         ? error.message
                         : "Failed to load Vehicle Model.",
-                    true
+                    true,
                 );
             }
         }

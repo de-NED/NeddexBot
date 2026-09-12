@@ -3,6 +3,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi.responses import FileResponse
 
 from src.admin_api.schemas import (
     VehicleModelCreateRequest,
@@ -100,10 +101,12 @@ async def upload_vehicle_image(
         if destination.exists():
             destination.unlink()
         raise
+
     except Exception:
         if destination.exists():
             destination.unlink()
         raise
+
     finally:
         await image.close()
 
@@ -116,6 +119,44 @@ async def upload_vehicle_image(
     return {
         "path": relative_path,
     }
+
+
+@router.get(
+    "/assets/{asset_path:path}",
+)
+async def get_vehicle_asset(
+    asset_path: str,
+    request: Request,
+) -> FileResponse:
+    application = get_application(request)
+
+    assets_directory = (
+        application.database_path.parent
+        / "assets"
+        / "vehicles"
+    ).resolve()
+
+    requested_file = (
+        assets_directory / asset_path
+    ).resolve()
+
+    try:
+        requested_file.relative_to(assets_directory)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Asset not found.",
+        ) from exc
+
+    if not requested_file.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Asset not found.",
+        )
+
+    return FileResponse(
+        requested_file,
+    )
 
 
 @router.post(
@@ -157,7 +198,9 @@ async def create_vehicle(
         mint_limit=vehicle.mint_limit,
         highest_mint=vehicle.highest_mint,
         catch_names="; ".join(
-            application.vehicle_models.get_catch_names(vehicle.id)
+            application.vehicle_models.get_catch_names(
+                vehicle.id
+            )
         ),
     )
 
@@ -252,7 +295,9 @@ async def get_vehicle(
         mint_limit=vehicle.mint_limit,
         highest_mint=vehicle.highest_mint,
         catch_names="; ".join(
-            application.vehicle_models.get_catch_names(vehicle.id)
+            application.vehicle_models.get_catch_names(
+                vehicle.id
+            )
         ),
     )
 
@@ -303,7 +348,9 @@ async def update_vehicle(
         mint_limit=vehicle.mint_limit,
         highest_mint=vehicle.highest_mint,
         catch_names="; ".join(
-            application.vehicle_models.get_catch_names(vehicle.id)
+            application.vehicle_models.get_catch_names(
+                vehicle.id
+            )
         ),
     )
 
@@ -330,5 +377,5 @@ async def delete_vehicle(
     except ValueError as exc:
         raise HTTPException(
             status_code=409,
-            detail=str(exc),
+            detail=str(exc)
         ) from exc

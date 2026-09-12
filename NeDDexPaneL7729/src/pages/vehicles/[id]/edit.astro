@@ -115,9 +115,26 @@ const apiUrl = "http://127.0.0.1:8000";
         border-color: #59616d;
       }
 
+      input[type="file"] {
+        padding: 9px;
+      }
+
       textarea {
         min-height: 100px;
         resize: vertical;
+      }
+
+      .image-help {
+        margin: -2px 0 0;
+        color: #737b86;
+        font-size: 12px;
+      }
+
+      .current-image {
+        margin-top: 4px;
+        color: #8b929c;
+        font-size: 12px;
+        word-break: break-all;
       }
 
       .checkboxes {
@@ -267,13 +284,31 @@ const apiUrl = "http://127.0.0.1:8000";
             </div>
 
             <div class="field full">
-              <label for="spawn-image">Spawn Image URL</label>
-              <input id="spawn-image" name="spawn_image" type="url" />
+              <label for="spawn-image">Spawn Image</label>
+              <input
+                id="spawn-image"
+                name="spawn_image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+              />
+              <p class="image-help">
+                Upload a JPEG, PNG, WebP, or GIF. Maximum size: 10 MB.
+              </p>
+              <p class="current-image" id="current-spawn-image"></p>
             </div>
 
             <div class="field full">
-              <label for="card-image">Card Image URL</label>
-              <input id="card-image" name="card_image" type="url" />
+              <label for="card-image">Card Image</label>
+              <input
+                id="card-image"
+                name="card_image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+              />
+              <p class="image-help">
+                Upload a JPEG, PNG, WebP, or GIF. Maximum size: 10 MB.
+              </p>
+              <p class="current-image" id="current-card-image"></p>
             </div>
 
             <div class="field full">
@@ -336,8 +371,17 @@ const apiUrl = "http://127.0.0.1:8000";
       const modelName = document.querySelector("#model-name");
       const year = document.querySelector("#year");
       const rarityWeight = document.querySelector("#rarity-weight");
+
       const spawnImage = document.querySelector("#spawn-image");
       const cardImage = document.querySelector("#card-image");
+
+      const currentSpawnImage = document.querySelector(
+        "#current-spawn-image",
+      );
+      const currentCardImage = document.querySelector(
+        "#current-card-image",
+      );
+
       const catchNames = document.querySelector("#catch-names");
       const enabled = document.querySelector("#enabled");
       const spawnEligible = document.querySelector("#spawn-eligible");
@@ -350,8 +394,20 @@ const apiUrl = "http://127.0.0.1:8000";
         .filter(Boolean)
         .at(-2);
 
+      let currentSpawnImagePath = null;
+      let currentCardImagePath = null;
+
       function updateMintLimitVisibility() {
         mintLimitField.classList.toggle("visible", limited.checked);
+      }
+
+      function setCurrentImageText(element, path) {
+        if (!path) {
+          element.textContent = "No image uploaded.";
+          return;
+        }
+
+        element.textContent = `Current image: ${path}`;
       }
 
       async function loadVehicle() {
@@ -374,8 +430,20 @@ const apiUrl = "http://127.0.0.1:8000";
           modelName.value = vehicle.model_name;
           year.value = vehicle.year ?? "";
           rarityWeight.value = vehicle.rarity_weight;
-          spawnImage.value = vehicle.spawn_image ?? "";
-          cardImage.value = vehicle.card_image ?? "";
+
+          currentSpawnImagePath = vehicle.spawn_image ?? null;
+          currentCardImagePath = vehicle.card_image ?? null;
+
+          setCurrentImageText(
+            currentSpawnImage,
+            currentSpawnImagePath,
+          );
+
+          setCurrentImageText(
+            currentCardImage,
+            currentCardImagePath,
+          );
+
           catchNames.value = vehicle.catch_names ?? "";
           enabled.checked = vehicle.enabled;
           spawnEligible.checked = vehicle.spawn_eligible;
@@ -396,6 +464,43 @@ const apiUrl = "http://127.0.0.1:8000";
         }
       }
 
+      async function uploadImage(file) {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const response = await fetch(
+          `${apiUrl}/admin/vehicles/upload-image`,
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
+
+        if (!response.ok) {
+          let message = `Image upload failed (${response.status})`;
+
+          try {
+            const data = await response.json();
+
+            if (data.detail) {
+              message = data.detail;
+            }
+          } catch {
+            // Keep the fallback message.
+          }
+
+          throw new Error(message);
+        }
+
+        const data = await response.json();
+
+        if (!data.path) {
+          throw new Error("Image upload did not return a file path.");
+        }
+
+        return data.path;
+      }
+
       limited.addEventListener("change", updateMintLimitVisibility);
 
       form.addEventListener("submit", async (event) => {
@@ -405,23 +510,38 @@ const apiUrl = "http://127.0.0.1:8000";
         status.className = "status";
         saveButton.disabled = true;
 
-        const payload = {
-          manufacturer: manufacturer.value.trim(),
-          model_name: modelName.value.trim(),
-          year: year.value ? Number(year.value) : null,
-          rarity_weight: Number(rarityWeight.value),
-          spawn_image: spawnImage.value.trim() || null,
-          card_image: cardImage.value.trim() || null,
-          enabled: enabled.checked,
-          spawn_eligible: spawnEligible.checked,
-          limited: limited.checked,
-          mint_limit: limited.checked && mintLimit.value
-            ? Number(mintLimit.value)
-            : null,
-          catch_names: catchNames.value.trim(),
-        };
-
         try {
+          let spawnImagePath = currentSpawnImagePath;
+          let cardImagePath = currentCardImagePath;
+
+          if (spawnImage.files.length > 0) {
+            status.textContent = "Uploading spawn image...";
+            spawnImagePath = await uploadImage(spawnImage.files[0]);
+          }
+
+          if (cardImage.files.length > 0) {
+            status.textContent = "Uploading card image...";
+            cardImagePath = await uploadImage(cardImage.files[0]);
+          }
+
+          status.textContent = "Saving vehicle...";
+
+          const payload = {
+            manufacturer: manufacturer.value.trim(),
+            model_name: modelName.value.trim(),
+            year: year.value ? Number(year.value) : null,
+            rarity_weight: Number(rarityWeight.value),
+            spawn_image: spawnImagePath || null,
+            card_image: cardImagePath || null,
+            enabled: enabled.checked,
+            spawn_eligible: spawnEligible.checked,
+            limited: limited.checked,
+            mint_limit: limited.checked && mintLimit.value
+              ? Number(mintLimit.value)
+              : null,
+            catch_names: catchNames.value.trim(),
+          };
+
           const response = await fetch(
             `${apiUrl}/admin/vehicles/${vehicleId}`,
             {

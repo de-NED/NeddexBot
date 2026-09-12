@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import random
 
 from src.core.activity import ActivityTracker
-from src.core.servers import ServerEligibility
+from src.core.servers import ServerConfigRepository, ServerEligibility
 
 from .coordinator import SpawnActivityResult, SpawnCoordinator
 from .engine import ActiveSpawn, SpawnEngine, SpawnModelSource
@@ -31,6 +31,7 @@ class SpawnManager:
         *,
         eligibility: ServerEligibility,
         model_source: SpawnModelSource,
+        server_config_repository: ServerConfigRepository | None = None,
         activity_cooldown: timedelta = timedelta(seconds=10),
         spawn_cooldown: timedelta = timedelta(minutes=30),
         catch_window: timedelta = timedelta(minutes=2),
@@ -38,6 +39,7 @@ class SpawnManager:
     ) -> None:
         self.eligibility = eligibility
         self.model_source = model_source
+        self.server_config_repository = server_config_repository
         self.activity_cooldown = activity_cooldown
         self.spawn_cooldown = spawn_cooldown
         self.catch_window = catch_window
@@ -90,6 +92,11 @@ class SpawnManager:
 
         state = self.get_state(server_id)
 
+        server_config = None
+
+        if self.server_config_repository is not None:
+            server_config = self.server_config_repository.get(server_id)
+
         coordinator = SpawnCoordinator(
             eligibility=self.eligibility,
             activity=state.activity,
@@ -104,6 +111,51 @@ class SpawnManager:
             is_bot=is_bot,
             is_webhook=is_webhook,
             is_command=is_command,
+            server_config=server_config,
+        )
+
+    def force_spawn(
+        self,
+        *,
+        server_id: int,
+        now: datetime,
+    ) -> SpawnActivityResult:
+        """
+        Force one spawn for administrative/development use.
+
+        This bypasses activity requirements and the normal spawn cooldown,
+        while still using the real SpawnEngine and eligible vehicle pool.
+        """
+
+        state = self.get_state(server_id)
+
+        if state.engine.active_spawn is not None:
+            if now < state.engine.active_spawn.expires_at:
+                return SpawnActivityResult(
+                    counted=False,
+                    ready=True,
+                    spawned=None,
+                )
+
+            state.engine.expire_if_needed(now)
+
+        state.engine.last_spawn_at = None
+
+        spawn = state.engine.create_spawn(now)
+
+        if spawn is None:
+            return SpawnActivityResult(
+                counted=False,
+                ready=True,
+                spawned=None,
+            )
+
+        state.activity.reset()
+
+        return SpawnActivityResult(
+            counted=False,
+            ready=True,
+            spawned=spawn,
         )
 
     def get_active_spawn(self, server_id: int) -> ActiveSpawn | None:

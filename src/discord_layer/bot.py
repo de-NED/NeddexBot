@@ -3,9 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import discord
+from discord import app_commands
 
 from src.application import NeddexApplication
 
+from .commands import register_commands
 from .events import handle_message
 
 
@@ -31,8 +33,17 @@ class NeddexBot(discord.Client):
             database_path
         )
 
+        self.tree = app_commands.CommandTree(self)
+
+        register_commands(
+            self.tree,
+            self,
+        )
+
     async def setup_hook(self) -> None:
         self.neddex_application.initialize()
+
+        await self.tree.sync()
 
     async def on_message(
         self,
@@ -43,6 +54,7 @@ class NeddexBot(discord.Client):
             message.author,
             message.content,
         )
+
         await handle_message(
             self,
             message,

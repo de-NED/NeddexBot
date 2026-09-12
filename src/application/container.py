@@ -13,7 +13,7 @@ from src.core.vehicles import VehicleModelRepository
 
 from src.discord_layer.coordinator import DiscordSpawnAdapter
 from src.discord_layer.spawns import send_spawn_message
-
+from src.core.servers.repository import ServerConfigRepository
 
 class NeddexApplication:
     """Application dependency container."""
@@ -32,6 +32,7 @@ class NeddexApplication:
         self.spawn_manager: SpawnManager | None = None
         self.catch_service: CatchService | None = None
         self.discord_spawn_adapter: DiscordSpawnAdapter | None = None
+        self.server_configs = ServerConfigRepository(database_path)
 
     def initialize(self) -> None:
         self.vehicle_models.initialize()
@@ -46,6 +47,7 @@ class NeddexApplication:
         self.spawn_manager = SpawnManager(
             eligibility=eligibility,
             model_source=model_source,
+            server_config_repository=self.server_configs,
         )
 
         self.catch_service = CatchService(
